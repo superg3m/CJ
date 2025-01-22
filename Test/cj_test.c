@@ -15,11 +15,11 @@ int main() {
 
     cj_push(root, "address", nested);
 
-    JSON* hobbies = cj_array_create();
-    cj_array_push(hobbies, JSON_STRING("Reading"));
-    cj_array_push(hobbies, JSON_STRING("Coding"));
-    cj_array_push(hobbies, JSON_STRING("Hiking"));
-    cj_push(root, "hobbies", hobbies);
+    // JSON* hobbies = cj_array_create();
+    // cj_array_push(hobbies, JSON_STRING("Reading"));
+    // cj_array_push(hobbies, JSON_STRING("Coding"));
+    // cj_array_push(hobbies, JSON_STRING("Hiking"));
+    // cj_push(root, "hobbies", hobbies);
 
     char* str = json_to_string(root);
     printf("%s\n", str);

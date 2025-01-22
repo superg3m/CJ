@@ -85,8 +85,8 @@ JSON* JSON_NULL() {
     return ret;
 }
 
-internal int depth = 1; 
-#define INDENT "  "
+internal int depth = 0; 
+#define INDENT "    "
 
 // Date: January 22, 2025
 // TODO(Jovanni): SWITCH THIS TO ALLOCATE WITH AN ARENA
@@ -106,7 +106,7 @@ char* json_to_string(JSON* root) {
         } break;
 
         case CJ_TYPE_STRING: {
-            return ckg_cstr_sprint("%s",  root->cj_string.value);    
+            return ckg_cstr_sprint("\"%s\"",  root->cj_string.value);    
         } break;
         
         case CJ_TYPE_NULL: {
@@ -118,36 +118,65 @@ char* json_to_string(JSON* root) {
             // return ckit_str_sprint("[%s]", root->cj_array.jsonVector);
         } break;
 
-
         case CJ_TYPE_JSON: {
-            char* to_append = "%s%s: %s"; // spaces, key, value
-            
-            //int count = ckg_vector_count(root->cj_json.key_value_pair_vector);
-            int count = 1;
+            depth += 1;
+
+            #define CJ_STR_FMT "STR|"
+            char *to_append = "STR|\"STR|\": STR|"; // spaces, key, value
+            char *fmt_specifier = "%s";
+
+            int num_json = (depth - 1) * ckg_cstr_length(INDENT);
+            int num_key = depth * ckg_cstr_length(INDENT);
+
+            int count = ckg_vector_count(root->cj_json.key_value_pair_vector);
             int new_line_and_comma = 2;
+
             u64 allocation_size = (ckg_cstr_length(to_append) * count) + ((new_line_and_comma * count) - 1) + 1;
-            char* create_formate_string = ckg_alloc(allocation_size);
+            char *create_format_string = ckg_alloc(allocation_size);
 
             for (int i = 0; i < count; i++) {
+                ckg_cstr_append(create_format_string, allocation_size, to_append);
                 if (i != (count - 1)) {
-                    ckg_cstr_append(create_formate_string, allocation_size, to_append);
-                    ckg_cstr_append_char(create_formate_string, allocation_size, '\n');
-                    ckg_cstr_append_char(create_formate_string, allocation_size, ',');
-                } else {
-                    ckg_cstr_append(create_formate_string, allocation_size, to_append);
+                    ckg_cstr_append_char(create_format_string, allocation_size, ',');
+                    ckg_cstr_append_char(create_format_string, allocation_size, '\n');
                 }
             }
 
-            char* ret = ckg_cstr_sprint("{\n%s%s\n}", create_formate_string, generateSpaces((depth - 1) * ckg_cstr_length(INDENT)));
+            allocation_size = snprintf(NULLPTR, 0, "{\n%s\n%s}", create_format_string, generateSpaces(num_json)) + 1;
+            char *buffer = ckg_alloc(allocation_size);
+            snprintf(buffer, allocation_size, "{\n%s\n%s}", create_format_string, generateSpaces(num_json));
+
+            char *ret = ckg_alloc(allocation_size);
+            snprintf(ret, allocation_size, buffer, generateSpaces(num_key));
+            ckg_free(buffer);
 
             for (int i = 0; i < ckg_vector_count(root->cj_json.key_value_pair_vector); i++) {
-                char* key = root->cj_json.key_value_pair_vector->key;
-                char* value = json_to_string(root->cj_json.key_value_pair_vector->value);
-                ret = ckg_cstr_sprint(ret, generateSpaces(depth * ckg_cstr_length(INDENT)), key, value);
-                break;
+                for (int pass = 0; pass < 3; pass++) {
+                    u32 start = ckg_cstr_index_of(ret, CJ_STR_FMT);
+                    u32 end = start + ckg_cstr_length(CJ_STR_FMT);
+
+                    for (u32 j = start; j < end; j++) {
+                        ret[j] = ' ';
+                    }
+
+                    for (u32 j = start; j < start + 2; j++) {
+                        ret[j] = fmt_specifier[j - start];
+                        ckg_memory_delete_index(ret, allocation_size - 1, allocation_size - 1, start + 2);
+                    }
+
+                    ret[allocation_size - 3] = '\0';
+                }
+
+                char *key = root->cj_json.key_value_pair_vector[i].key;
+                char *value = json_to_string(root->cj_json.key_value_pair_vector[i].value);
+
+                allocation_size = snprintf(NULLPTR, 0, ret, generateSpaces(num_key), key, value) + 1;
+                char* buffer = ckg_alloc(allocation_size);
+                snprintf(buffer, allocation_size, ret, generateSpaces(num_key), key, value);
+                ckg_free(ret);
+                ret = buffer;
             }
 
-            depth += 1;
             return ret;
         } break;
 

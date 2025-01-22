@@ -1,5 +1,14 @@
 #include <cj.h>
 
+internal char* generateSpaces(int number_of_spaces) {
+    char* ret = ckg_alloc((sizeof(char) * number_of_spaces) + 1);
+    for (int i = 0; i < number_of_spaces; i++) {
+        ret[i] = ' ';
+    }
+    
+    return ret;
+}
+
 JSON* cj_create() {
     JSON* ret = (JSON*)malloc(sizeof(JSON));
     ret->type = CJ_TYPE_JSON;
@@ -76,6 +85,9 @@ JSON* JSON_NULL() {
     return ret;
 }
 
+internal int depth = 1; 
+#define INDENT " "
+
 char* json_to_string(JSON* root) {
     switch (root->type) {
         case CJ_TYPE_BOOL: {
@@ -106,15 +118,16 @@ char* json_to_string(JSON* root) {
 
 
         case CJ_TYPE_JSON: {
-            // I need some conditional logic here
-            // return ckit_str_sprint("[%s]", root->cj_array.jsonVector);
+            depth += 1;
+            for (int i = 0; i < ckg_vector_count(root->cj_json.key_value_pair_vector); i++) {
+                char* key = root->cj_json.key_value_pair_vector->key;
+                JSON* value = root->cj_json.key_value_pair_vector->value;
+                return ckg_cstr_sprint("{\n%s%s: %s\n}", generateSpaces(depth * sizeof(INDENT)), key, json_to_string(value));
+            }
+            
         } break;
 
     }
 
-    return NULLPTR;
-}
-
-char* cj_str_alloc(JSON* root) {
     return NULLPTR;
 }

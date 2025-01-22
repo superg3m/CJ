@@ -69,3 +69,5 @@ JSON* JSON_FLOAT(int value);
 JSON* JSON_STRING(char* value);
 JSON* JSON_BOOL(Boolean value);
 JSON* JSON_NULL();
+
+char* json_to_string(JSON* root);

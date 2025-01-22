@@ -21,8 +21,8 @@ int main() {
     cj_array_push(hobbies, JSON_STRING("Hiking"));
     cj_push(root, "hobbies", hobbies);
 
-    // char* str = cj_str_alloc(root);
-    // printf("%s\n", str);
+    char* str = json_to_string(root);
+    printf("%s\n", str);
 
     //char *json_string = json_print(root);
     //printf("%s\n", json_string);

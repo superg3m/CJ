@@ -65,7 +65,7 @@ JSON* cj_array_create();
 void cj_array_push(JSON* array, JSON* value);
 
 JSON* JSON_INT(int value);
-JSON* JSON_FLOAT(int value);
+JSON* JSON_FLOAT(float value);
 JSON* JSON_STRING(char* value);
 JSON* JSON_BOOL(Boolean value);
 JSON* JSON_NULL();

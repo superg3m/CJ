@@ -53,7 +53,7 @@ JSON* JSON_INT(int value) {
     return ret;
 }
 
-JSON* JSON_FLOAT(int value) {
+JSON* JSON_FLOAT(float value) {
     JSON* ret = cj_create();
     ret->type = CJ_TYPE_FLOAT;
     ret->cj_float.value = value;

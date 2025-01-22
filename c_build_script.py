@@ -22,7 +22,7 @@ elif compiler_name in ["gcc", "cc", "clang"]:
     project_warning_level = ""
 
 
-libs = [f"../ckit/build_{compiler_name}/{C_BUILD_LIB('ckit', compiler_name)}"]
+libs = []
 if IS_WINDOWS():
 	windows_libs = ["User32.lib", "Gdi32.lib"] if compiler_name == "cl" else ["-lUser32", "-lGdi32"]
 	libs += windows_libs
@@ -31,14 +31,11 @@ procedures_config = {
     "cj_test executable": {
         "build_directory": f"./build_{compiler_name}",
         "output_name": f"cj_test.exe",
-        "source_files": ["../Source/*.c"],
+        "source_files": ["../cj.c", "../ckg.c", "../Test/cj_test.c"],
         "additional_libs": libs,
         "compile_time_defines": [],
         "compiler_inject_into_args": [],
-        "include_paths": [
-            "../Include", 
-            "../ckit"
-        ],
+        "include_paths": ["../"],
     },
 }
 

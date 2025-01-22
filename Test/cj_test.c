@@ -4,19 +4,18 @@ int main() {
     // char* indent = "    "
     // json_set_context_format(indent);
 
-    // CJ_START()
     JSON* root = cj_create();
-    cj_push(root, "name", JSON_STRING("Example"));
-    cj_push(root, "age", JSON_INT(25));
+    cj_push(root, "name", "Example");
+    cj_push(root, "age", 25);
 
     JSON* nested = cj_create();
-    cj_push(nested, "address1", JSON_STRING("San Francisco"));
-    cj_push(nested, "address2", JSON_STRING("California"));
+    cj_push(nested, "address1", "San Francisco");
+    cj_push(nested, "address2", "California");
 
     JSON* nested_twice = cj_create();
-    cj_push(nested_twice, "KylE", JSON_BOOL(TRUE));
-    cj_push(nested_twice, "ANdY", JSON_INT(84));
-    cj_push(nested_twice, "Jovanni", JSON_FLOAT(3.141598));
+    cj_push(nested_twice, "KylE", TRUE);
+    cj_push(nested_twice, "ANdY", 84);
+    cj_push(nested_twice, "Jovanni", 3.141598f);
 
     cj_push(nested, "Names", nested_twice);
     cj_push(root, "address", nested);

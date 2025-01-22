@@ -23,7 +23,7 @@ JSON* cj_array_create() {
     return ret;
 }
 
-void cj_push(JSON* root, char* key, JSON* value) {
+void MACRO_cj_push(JSON* root, char* key, JSON* value) {
     if (root->type != CJ_TYPE_JSON) {
         // I would normally assert, but Andy wouldn't like that so I guess error codes?
         // If its not of type JSON then you shouldn't be pushing to it
@@ -75,6 +75,10 @@ JSON* JSON_BOOL(Boolean value) {
     ret->cj_bool.value = value;
 
     return ret;
+}
+
+JSON* JSON_JSON(JSON* json) {
+    return json;
 }
 
 JSON* JSON_NULL() {

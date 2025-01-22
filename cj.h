@@ -15,7 +15,7 @@ typedef struct CJ_Float {
 } CJ_Float;
 
 typedef struct CJ_String{
-    char* str;
+    char* value;
 } CJ_String;
 
 typedef struct CJ_Array {

@@ -339,6 +339,11 @@
 	CKG_API void ckg_substring(const char* string_buffer, char* returned_buffer, u32 start_range, u32 end_range);
 	CKG_API Boolean ckg_cstr_contains(const char* string_buffer, const char* contains);
 	CKG_API u32 ckg_cstr_index_of(const char* string_buffer, const char* sub_string);
+    
+    CKG_API char* ckg_cstr_va_sprint(char* fmt, va_list args);
+    CKG_API char* MACRO_ckg_cstr_sprint(char* fmt, ...);
+    #define ckg_cstr_sprint(fmt, ...) MACRO_ckg_cstr_sprint(fmt, ##__VA_ARGS__)
+
 	CKG_API u32 ckg_cstr_last_index_of(const char* string_buffer, const char* sub_string);
 	CKG_API Boolean ckg_cstr_starts_with(const char* string_buffer, const char* starts_with);
 	CKG_API Boolean ckg_cstr_ends_with(const char* string_buffer, const char* ends_with);
@@ -1042,6 +1047,27 @@
         }
 
         return ret_index;
+    }
+
+    CKG_API char* MACRO_ckg_cstr_sprint(char* fmt, ...) {
+        va_list args_list;
+        va_start(args_list, fmt);
+
+        u32 allocation_size = vsnprintf(NULLPTR, 0, fmt, args_list) + 1; // + 1 because null terminator
+        char* buffer = ckg_alloc(allocation_size);
+        vsnprintf(buffer, allocation_size, fmt, args_list);
+
+        va_end(args_list);
+
+        return buffer;
+    }
+
+    CKG_API char* ckg_cstr_va_sprint(char* fmt, va_list args) {
+        u32 allocation_size = vsnprintf(NULLPTR, 0, fmt, args) + 1; // + 1 because null terminator
+        char* buffer = ckg_alloc(allocation_size);
+        vsnprintf(buffer, allocation_size, fmt, args);
+
+        return buffer;
     }
 
     u32 ckg_cstr_last_index_of(const char* str, const char* sub_string) {

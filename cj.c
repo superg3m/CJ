@@ -94,6 +94,9 @@ internal int depth = 0;
 
 // Date: January 22, 2025
 // TODO(Jovanni): SWITCH THIS TO ALLOCATE WITH AN ARENA
+
+// Date: January 22, 2025
+// TODO(Jovanni): I need ckg_cstr_remove(buffer, buffer_size, to_remove)
 char* json_to_string(JSON* root) {
     switch (root->type) {
         case CJ_TYPE_BOOL: {

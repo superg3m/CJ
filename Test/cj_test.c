@@ -13,9 +13,10 @@ int main() {
     cj_push(nested, "address2", "California");
 
     JSON* nested_twice = cj_create();
-    cj_push(nested_twice, "KylE", TRUE);
+    cj_push(nested_twice, "KylE", (Boolean)TRUE);
     cj_push(nested_twice, "ANdY", 84);
     cj_push(nested_twice, "Jovanni", 3.141598f);
+    cj_push(nested_twice, "Hykes", (Boolean)FALSE);
 
     cj_push(nested, "Names", nested_twice);
     cj_push(root, "address", nested);

@@ -72,14 +72,14 @@ JSON* JSON_JSON(JSON* json);
 JSON* JSON_NULL();
 
 #define cj_push(root, key, value) MACRO_cj_push(root, key, _Generic((value),  \
+    Boolean: JSON_BOOL,                \
     char[sizeof(value)]: JSON_STRING,              \
     const char[sizeof(value)]: JSON_STRING,              \
     char*: JSON_STRING,               \
     const char*: JSON_STRING,         \
     float: JSON_FLOAT,                \
     int: JSON_INT,                    \
-    JSON*: JSON_JSON,                 \
-    Boolean: JSON_BOOL                \
+    JSON*: JSON_JSON                 \
 )(value))
 
 char* json_to_string(JSON* root);

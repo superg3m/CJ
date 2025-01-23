@@ -92,6 +92,22 @@ JSON* JSON_NULL() {
 internal int depth = 0; 
 #define INDENT "    "
 
+void buffer_replace_with_specifer(char* buffer, u32 buffer_cap, char* string_to_remove) {
+    char *fmt_specifier = "%s";
+    u32 start = ckg_cstr_index_of(buffer, string_to_remove);
+    u32 end = start + ckg_cstr_length(string_to_remove);
+
+    for (u32 j = start; j < end; j++) {
+        buffer[j] = ' ';
+    }
+
+    for (u32 j = start; j < start + 2; j++) {
+        buffer[j] = fmt_specifier[j - start];
+        ckg_memory_delete_index(buffer, buffer_cap, buffer_cap, start + 2);
+        buffer[(buffer_cap - 1) - (start - j)] = '\0';
+    }
+}
+
 // Date: January 22, 2025
 // TODO(Jovanni): SWITCH THIS TO ALLOCATE WITH AN ARENA
 
@@ -159,19 +175,7 @@ char* json_to_string(JSON* root) {
 
             for (int i = 0; i < ckg_vector_count(root->cj_json.key_value_pair_vector); i++) {
                 for (int pass = 0; pass < 3; pass++) {
-                    u32 start = ckg_cstr_index_of(ret, CJ_STR_FMT);
-                    u32 end = start + ckg_cstr_length(CJ_STR_FMT);
-
-                    for (u32 j = start; j < end; j++) {
-                        ret[j] = ' ';
-                    }
-
-                    for (u32 j = start; j < start + 2; j++) {
-                        ret[j] = fmt_specifier[j - start];
-                        ckg_memory_delete_index(ret, allocation_size - 1, allocation_size - 1, start + 2);
-                    }
-
-                    ret[allocation_size - 3] = '\0';
+                    buffer_replace_with_specifer(ret, allocation_size, CJ_STR_FMT);
                 }
 
                 char *key = root->cj_json.key_value_pair_vector[i].key;

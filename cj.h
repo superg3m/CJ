@@ -62,7 +62,7 @@ JSON* cj_create();
 void MACRO_cj_push(JSON* root, char* key, JSON* value);
 
 JSON* cj_array_create();
-void cj_array_push(JSON* array, JSON* value);
+void MACRO_cj_array_push(JSON* array, JSON* value);
 
 JSON* JSON_INT(int value);
 JSON* JSON_FLOAT(float value);
@@ -72,6 +72,18 @@ JSON* JSON_JSON(JSON* json);
 JSON* JSON_NULL();
 
 #define cj_push(root, key, value) MACRO_cj_push(root, key, _Generic((value),  \
+    Boolean: JSON_BOOL,                \
+    char[sizeof(value)]: JSON_STRING,              \
+    const char[sizeof(value)]: JSON_STRING,              \
+    char*: JSON_STRING,               \
+    const char*: JSON_STRING,         \
+    float: JSON_FLOAT,                \
+    int: JSON_INT,                    \
+    JSON*: JSON_JSON                 \
+)(value))
+
+
+#define cj_array_push(root, value) MACRO_cj_array_push(root, _Generic((value),  \
     Boolean: JSON_BOOL,                \
     char[sizeof(value)]: JSON_STRING,              \
     const char[sizeof(value)]: JSON_STRING,              \

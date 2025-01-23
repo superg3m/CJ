@@ -36,7 +36,7 @@ void MACRO_cj_push(JSON* root, char* key, JSON* value) {
     ckg_vector_push(root->cj_json.key_value_pair_vector, pair);
 }
 
-void cj_array_push(JSON* root, JSON* value) {
+void MACRO_cj_array_push(JSON* root, JSON* value) {
     if (root->type != CJ_TYPE_ARRAY) {
         // I would normally assert, but Andy wouldn't like that so I guess error codes?
         // If its not of type JSON then you shouldn't be pushing to it
@@ -150,10 +150,42 @@ char* json_to_string(JSON* root) {
         } break;
 
         case CJ_TYPE_ARRAY: {
-            // I need some conditional logic here
-            // return ckit_str_sprint("[%s]", root->cj_array.jsonVector);
+            depth += 1;
+            int num_json = (depth - 1) * ckg_cstr_length(INDENT);
+            int num_key = depth * ckg_cstr_length(INDENT);
+
+            int count = ckg_vector_count(root->cj_array.jsonVector);
+            char** buffers = ckg_alloc(sizeof(char*) * count);
+            u64 replaced_allocation_size = ((sizeof(REPLACEMENT) - 1) * count) + (sizeof("[]") - 1) + 1; // {} + \n\n + null term
+            char* replaced_buffer = ckg_alloc(replaced_allocation_size);
+
+            ckg_cstr_append(replaced_buffer, replaced_allocation_size, "[");  
+            for (int i = 0; i < count; i++) {
+                JSON* value = root->cj_array.jsonVector[i];
+                if (i == (count - 1)) {
+                    buffers[i] = ckg_cstr_sprint("%s", json_to_string(value)); 
+                } else {
+                    buffers[i] = ckg_cstr_sprint("%s, ", json_to_string(value));  
+                }
+                ckg_cstr_append(replaced_buffer, replaced_allocation_size, REPLACEMENT);
+            }
+
+            for (int i = 0; i < count; i++) {
+                buffer_replace_with_specifer(replaced_buffer, replaced_allocation_size, REPLACEMENT);
+                replaced_buffer = cj_sprint(&replaced_allocation_size, replaced_buffer, buffers[i]);
+            }
+
+            u64 alloc_size = replaced_allocation_size + sizeof("]");
+            char* ret = ckg_alloc(alloc_size);
+            ckg_cstr_copy(ret, alloc_size, replaced_buffer);
+            ckg_cstr_append(ret, alloc_size, "]");
+            ret = cj_sprint(&replaced_allocation_size, ret, generateSpaces(num_json));
+            
+            return ret;
         } break;
 
+        // Date: January 23, 2025
+        // TODO(Jovanni): FIX THE MEMORY LEAKS with buffers and stuff
         case CJ_TYPE_JSON: {
             depth += 1;
             int num_json = (depth - 1) * ckg_cstr_length(INDENT);

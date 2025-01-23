@@ -24,7 +24,7 @@ int main() {
     JSON* hobbies = cj_array_create();
     cj_array_push(hobbies, (Boolean)TRUE);
     cj_array_push(hobbies, "Coding");
-    cj_array_push(hobbies, "Hiking");
+    cj_array_push(hobbies, JSON_NULL());
     cj_push(root, "hobbies", hobbies);
 
     char* str = json_to_string(root);

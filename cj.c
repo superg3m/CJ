@@ -195,6 +195,7 @@ char* json_to_string(JSON* root) {
             char** buffers = ckg_alloc(sizeof(char*) * count);
             u64 replaced_allocation_size = ((sizeof(REPLACEMENT) - 1) * count) + (sizeof("{\n%s\n}") - 1) + 1; // {} + \n\n + null term
             char* replaced_buffer = ckg_alloc(replaced_allocation_size);
+            // char* full_buffer = ckg_alloc(total_allocation_size); // Then put all the buffers into a single buffer basically making a file.
 
             ckg_cstr_append(replaced_buffer, replaced_allocation_size, "{\n");
             for (int i = 0; i < count; i++) {

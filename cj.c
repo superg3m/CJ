@@ -91,6 +91,19 @@ JSON* JSON_NULL() {
 
 internal int depth = 0; 
 #define INDENT "    "
+#define REPLACEMENT "<ST>"
+
+char* cj_sprint(u64* allocation_size, char* fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    *allocation_size = vsnprintf(NULLPTR, 0, fmt, args) + 1;
+    char* ret = ckg_alloc(*allocation_size);
+    vsnprintf(ret, *allocation_size, fmt, args);
+    va_end(args);
+
+    return ret;
+}
 
 void buffer_replace_with_specifer(char* buffer, u32 buffer_cap, char* string_to_remove) {
     char *fmt_specifier = "%s";
@@ -106,40 +119,6 @@ void buffer_replace_with_specifer(char* buffer, u32 buffer_cap, char* string_to_
         ckg_memory_delete_index(buffer, buffer_cap, buffer_cap, start + 2);
         buffer[(buffer_cap - 1) - (start - j)] = '\0';
     }
-}
-
-char* cj_sprint(u64* allocation_size, char* fmt, ...) {
-    va_list args;
-
-    va_start(args, fmt);
-    *allocation_size = vsnprintf(NULLPTR, 0, fmt, args) + 1;
-    char* ret = ckg_alloc(*allocation_size);
-    vsnprintf(ret, *allocation_size, fmt, args);
-    va_end(args);
-
-    return ret;
-}
-
-#define CJ_STR_FMT "<ST>"
-char* generateSpecifer(int count, int num_json) {
-    char* to_append = "<ST>\"<ST>\": <ST>"; // spaces, key, value
-
-    int new_line_and_comma = 2;
-    u64 allocation_size = (ckg_cstr_length(to_append) * count) + ((new_line_and_comma * count) - 1) + 1;
-    char* buffer = ckg_alloc(allocation_size);
-
-    for (int i = 0; i < count; i++) {
-        ckg_cstr_append(buffer, allocation_size, to_append);
-        if (i != (count - 1)) {
-            ckg_cstr_append_char(buffer, allocation_size, ',');
-            ckg_cstr_append_char(buffer, allocation_size, '\n');
-        }
-    }
-
-    char* ret = cj_sprint(&allocation_size, "{\n%s\n%s}", buffer, generateSpaces(num_json));
-    ckg_free(buffer);
-
-    return ret;
 }
 
 // Date: January 22, 2025
@@ -179,30 +158,36 @@ char* json_to_string(JSON* root) {
             depth += 1;
             int num_json = (depth - 1) * ckg_cstr_length(INDENT);
             int num_key = depth * ckg_cstr_length(INDENT);
-
             int count = ckg_vector_count(root->cj_json.key_value_pair_vector);
-            int new_line_and_comma = 2;
 
-            char* create_format_string = generateSpecifer(count, num_json);
-            u64 allocation_size = 0; 
-        
-            char* ret = cj_sprint(&allocation_size, create_format_string, generateSpaces(num_key));
-            ckg_free(create_format_string);
+            char** buffers = ckg_alloc(sizeof(char*) * count);
+            u64 replaced_allocation_size = ((sizeof(REPLACEMENT) - 1) * count) + (sizeof("{\n%s\n}") - 1) + 1; // {} + \n\n + null term
+            char* replaced_buffer = ckg_alloc(replaced_allocation_size);
 
-            for (int i = 0; i < ckg_vector_count(root->cj_json.key_value_pair_vector); i++) {
-                for (int pass = 0; pass < 3; pass++) {
-                    buffer_replace_with_specifer(ret, allocation_size, CJ_STR_FMT);
-                }
-
+            ckg_cstr_append(replaced_buffer, replaced_allocation_size, "{\n");
+            for (int i = 0; i < count; i++) {
                 char *key = root->cj_json.key_value_pair_vector[i].key;
                 char *value = json_to_string(root->cj_json.key_value_pair_vector[i].value);
 
-                allocation_size = snprintf(NULLPTR, 0, ret, generateSpaces(num_key), key, value) + 1;
-                char* buffer = ckg_alloc(allocation_size);
-                snprintf(buffer, allocation_size, ret, generateSpaces(num_key), key, value);
-                ckg_free(ret);
-                ret = buffer;
+                if (i == (count - 1)) {
+                    buffers[i] = ckg_cstr_sprint("%s\"%s\": %s", generateSpaces(num_key), key, value); 
+                } else {
+                    buffers[i] = ckg_cstr_sprint("%s\"%s\": %s,\n", generateSpaces(num_key), key, value);  
+                }
+
+                ckg_cstr_append(replaced_buffer, replaced_allocation_size, REPLACEMENT);
             }
+
+            for (int i = 0; i < count; i++) {
+                buffer_replace_with_specifer(replaced_buffer, replaced_allocation_size, REPLACEMENT);
+                replaced_buffer = cj_sprint(&replaced_allocation_size, replaced_buffer, buffers[i]);
+            }
+
+            u64 alloc_size = replaced_allocation_size + sizeof("\n%s}");
+            char* ret = ckg_alloc(alloc_size);
+            ckg_cstr_copy(ret, alloc_size, replaced_buffer);
+            ckg_cstr_append(ret, alloc_size, "\n%s}");
+            ret = cj_sprint(&replaced_allocation_size, ret, generateSpaces(num_json));
 
             return ret;
         } break;

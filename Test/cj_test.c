@@ -4,15 +4,16 @@ int main() {
     char* indent = "    ";
     cj_set_context_indent(indent);
 
-    JSON* root = cj_create();
+    CJ_Arena* arena = cj_arena_create(0);
+    JSON* root = cj_create(arena);
     cj_push(root, "name", "Example");
     cj_push(root, "age", 25);
 
-    JSON* nested = cj_create();
+    JSON* nested = cj_create(arena);
     cj_push(nested, "address1", "San Francisco");
     cj_push(nested, "address2", "California");
 
-    JSON* nested_twice = cj_create();
+    JSON* nested_twice = cj_create(arena);
     cj_push(nested_twice, "KylE", (Boolean)TRUE);
     cj_push(nested_twice, "ANdY", 84);
     cj_push(nested_twice, "Jovanni", 3.141598f);
@@ -21,14 +22,15 @@ int main() {
     cj_push(nested, "Names", nested_twice);
     cj_push(root, "address", nested);
 
-    JSON* hobbies = cj_array_create();
+    JSON* hobbies = cj_array_create(arena);
     cj_array_push(hobbies, (Boolean)TRUE);
     cj_array_push(hobbies, "Coding");
-    cj_array_push(hobbies, JSON_NULL());
+    cj_array_push(hobbies, JSON_NULL(arena));
     cj_push(root, "hobbies", hobbies);
 
     char* str = json_to_string(root);
     printf("%s\n", str);
+    cj_arena_free(arena);
     free(str);
 
     // u8* source_data = cj_os_read_entire_file(file_path, &file_size);

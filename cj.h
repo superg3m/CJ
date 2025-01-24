@@ -283,20 +283,21 @@
             CJ_Array cj_array;
             CJ_JSON cj_json;
         };
+        CJ_Arena* arena;
     } JSON;
 
-    JSON* cj_create();
+    JSON* cj_create(CJ_Arena* arena);
     void MACRO_cj_push(JSON* root, char* key, JSON* value);
 
-    JSON* cj_array_create();
+    JSON* cj_array_create(CJ_Arena* arena);
     void MACRO_cj_array_push(JSON* array, JSON* value);
 
-    JSON* JSON_INT(int value);
-    JSON* JSON_FLOAT(float value);
-    JSON* JSON_STRING(char* value);
-    JSON* JSON_BOOL(Boolean value);
-    JSON* JSON_JSON(JSON* json);
-    JSON* JSON_NULL();
+    JSON* JSON_INT(CJ_Arena* arena, int value);
+    JSON* JSON_FLOAT(CJ_Arena* arena, float value);
+    JSON* JSON_STRING(CJ_Arena* arena, char* value);
+    JSON* JSON_BOOL(CJ_Arena* arena, Boolean value);
+    JSON* JSON_JSON(CJ_Arena* arena, JSON* json);
+    JSON* JSON_NULL(CJ_Arena* arena);
 
     #define cj_push(root, key, value) MACRO_cj_push(root, key, _Generic((value),  \
         Boolean: JSON_BOOL,                \
@@ -307,7 +308,7 @@
         float: JSON_FLOAT,                \
         int: JSON_INT,                    \
         JSON*: JSON_JSON                 \
-    )(value))
+    )(root->arena, value))
 
 
     #define cj_array_push(root, value) MACRO_cj_array_push(root, _Generic((value),  \
@@ -319,7 +320,7 @@
         float: JSON_FLOAT,                \
         int: JSON_INT,                    \
         JSON*: JSON_JSON                 \
-    )(value))
+    )(root->arena, value))
 #endif
 
 #if defined(CJ_INCLUDE_FORMATTED_BUFFER)
@@ -378,6 +379,15 @@
 
 #if defined(CJ_INCLUDE_PARSING)
     JSON* parse_json_buffer(char* json_buffer);
+
+    typedef struct Parser {
+        SPL_Token* tokens;
+        SPL_Token tok;
+        int current;
+        CJ_Arena* arena_allocator;
+    } Parser;
+
+    Parser parserCreate();
 #endif
 
 //
@@ -924,15 +934,17 @@
 #endif
 
 #if defined(CJ_IMPL_CREATION) 
-    JSON* cj_create() {
-        JSON* ret = (JSON*)cj_alloc(sizeof(JSON));
+    JSON* cj_create(CJ_Arena* arena) {
+        JSON* ret = (JSON*)cj_arena_push(arena, JSON);
+        ret->arena = arena;
         ret->type = CJ_TYPE_JSON;
 
         return ret;
     }
 
-    JSON* cj_array_create() {
-        JSON* ret = (JSON*)cj_alloc(sizeof(JSON));
+    JSON* cj_array_create(CJ_Arena* arena) {
+        JSON* ret = (JSON*)cj_arena_push(arena, JSON);
+        ret->arena = arena;
         ret->type = CJ_TYPE_ARRAY;
 
         return ret;
@@ -960,32 +972,32 @@
         cj_vector_push(root->cj_array.jsonVector, value);
     }
 
-    JSON* JSON_INT(int value) {
-        JSON* ret = cj_create();
+    JSON* JSON_INT(CJ_Arena* arena,int value) {
+        JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_INT;
         ret->cj_int = value;
 
         return ret;
     }
 
-    JSON* JSON_FLOAT(float value) {
-        JSON* ret = cj_create();
+    JSON* JSON_FLOAT(CJ_Arena* arena, float value) {
+        JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_FLOAT;
         ret->cj_float = value;
 
         return ret;
     }
 
-    JSON* JSON_STRING(char* value) {
-        JSON* ret = cj_create();
+    JSON* JSON_STRING(CJ_Arena* arena,char* value) {
+        JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_STRING;
         ret->cj_string = value;
 
         return ret;
     }
 
-    JSON* JSON_BOOL(Boolean value) {
-        JSON* ret = cj_create();
+    JSON* JSON_BOOL(CJ_Arena* arena,Boolean value) {
+        JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_BOOL;
         ret->cj_bool = value;
 
@@ -996,8 +1008,8 @@
         return json;
     }
 
-    JSON* JSON_NULL() {
-        JSON* ret = cj_create();
+    JSON* JSON_NULL(CJ_Arena* arena) {
+        JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_NULL;
         ret->cj_null = "null";
 
@@ -1447,4 +1459,69 @@
     // if you have null append JSON_NULL()
     // if you have a [] append JSON_Array
     // if you have ""
+
+    JSON* parseExpression(Parser* parser);
+
+    Parser parserCreate() {
+        Parser ret;
+        ret.tokens = NULLPTR;
+        ret.current = 0;
+        ret.tok;
+        ret.arena_allocator = ckit_arena_create(KiloBytes(2), "Parser Allocator");
+
+        return ret;
+    }
+
+    void parserFree(Parser* parser) {
+        ckit_arena_free(parser->arena_allocator);
+    }
+
+    internal void consumeNextToken(Parser* parser) {
+        parser->tok = parser->tokens[parser->current];
+        parser->current += 1;
+    }
+
+    internal SPL_Token peekNthToken(Parser* parser, int n) {
+        return parser->tokens[parser->current + n];
+    }
+
+    internal void reportError(Parser* parser, char* msg) {
+        LOG_ERROR("Parser Error: %s | Line: %d\n", peekNthToken(parser, 0).lexeme, peekNthToken(parser, 0).line);
+        LOG_ERROR("Msg: %s\n", msg);
+        ckit_assert(FALSE);
+    }
+
+    internal void expect(Parser* parser, SPL_TokenType expected_type) {
+        if (peekNthToken(parser, 0).type != expected_type) {
+            LOG_ERROR("Expected: %s | Got: %s", tokenTypeToString(expected_type), peekNthToken(parser, 0).lexeme);
+            reportError(parser, "\n");
+        }
+    }
+
+    internal Boolean consumeOnMatch(Parser* parser, SPL_TokenType expected_type) {
+        if (peekNthToken(parser, 0).type == expected_type) {
+            consumeNextToken(parser);
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    internal SPL_Token previousToken(Parser* parser) {
+        return parser->tokens[parser->current - 1];
+    }
+
+    internal JSON* parseJSON(Parser* parser) {
+        return parseTerm(parser);
+    }
+
+    JSON* parse_json_buffer(Parser* parser, SPL_Token* tokens) {
+        parser->current = 0;
+        parser->tokens = tokens;
+        parser->tok = parser->tokens[parser->current];
+
+        JSON* json = parseJSON(parser);
+
+        return json;
+    }
 #endif

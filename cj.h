@@ -1399,7 +1399,7 @@
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
 
-    internal CJ_Lexer lexerCreate() {
+    internal CJ_Lexer cj_lexerCreate() {
         CJ_Lexer lexer = {0};
 
         lexer.left_pos  = 0;
@@ -1667,7 +1667,7 @@
         return ret;
     }
 
-    void parserFree(CJ_Parser* parser) {
+    void cj_parserFree(CJ_Parser* parser) {
         cj_arena_free(parser->arena_allocator);
     }
 
@@ -1822,12 +1822,13 @@
     }
 
     JSON* cj_parse(CJ_Arena* arena, char* json_buffer) {
-        CJ_Lexer lexer = lexerCreate();
+        CJ_Lexer lexer = cj_lexerCreate();
         CJ_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
 
         CJ_Parser parser = cj_parserCreate();
         parser.current = 0;
         parser.tokens = token_stream;
+        cj_parserFree(&parser);
 
         JSON* root = parseJSON(&parser, arena);
         return root;

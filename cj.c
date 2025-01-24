@@ -1,5 +1,9 @@
 #include <cj.h>
 
+// JSON_CREATION
+// JSON_FORMATED_BUFFER
+// JSON_PARSING
+
 internal char* generateSpaces(int number_of_spaces) {
     char* ret = ckg_alloc((sizeof(char) * number_of_spaces) + 1);
     for (int i = 0; i < number_of_spaces; i++) {

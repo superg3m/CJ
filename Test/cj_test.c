@@ -29,7 +29,7 @@ int main() {
     cj_array_push(hobbies, "Coding");
     cj_push(root, "hobbies", hobbies);
 
-    char* str = json_to_string(root);
+    char* str = cj_to_string(root);
     printf("%s\n", str);
     free(str);
 
@@ -38,8 +38,8 @@ int main() {
     char* test_json = "{ \"test\": -5, \"WOW\": null, \"sad\": [1, null, true, false, 523.234] }";
 
     printf("------------ PARSING ------------\n");
-    JSON* json_test_parse = parse_json_buffer(arena, test_json);
-    char* str2 = json_to_string(json_test_parse);
+    JSON* json_test_parse = cj_parse(arena, test_json);
+    char* str2 = cj_to_string(json_test_parse);
     printf("%s\n", str2);
     cj_arena_free(arena);
     free(str);

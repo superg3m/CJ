@@ -329,12 +329,12 @@
 #endif
 
 #if defined(CJ_INCLUDE_FORMATTED_BUFFER)
-    CJ_API char* json_to_string(JSON* root);
+    CJ_API char* cj_to_string(JSON* root);
     CJ_API void cj_set_context_indent(char* new_indent);
 #endif
 
 #if defined(CJ_INCLUDE_PARSING)
-    JSON* cj_Parse(CJ_Arena* arena, char* json_buffer);
+    JSON* cj_parse(CJ_Arena* arena, char* json_buffer);
 #endif
 
 //
@@ -1211,7 +1211,7 @@
         return (int)(end - decimal_point);
     }
 
-    internal char* json_to_string_helper(CJ_Arena* arena, JSON* root, int depth) {
+    internal char* cj_to_string_helper(CJ_Arena* arena, JSON* root, int depth) {
         switch (root->type) {
             case CJ_TYPE_BOOL: {
                 char* bool_string = root->cj_bool ? "true" : "false"; 
@@ -1245,7 +1245,7 @@
                 u64 total_allocation_size = sizeof("[\n%s]") - 1;
                 for (int i = 0; i < count; i++) {
                     u64 allocation_size = 0;
-                    char* value = json_to_string_helper(arena, root->cj_array.jsonVector[i], depth);
+                    char* value = cj_to_string_helper(arena, root->cj_array.jsonVector[i], depth);
                     if (i == (count - 1)) {
                         buffers[i] = cj_sprint(arena, &allocation_size, "\n%s%s", generateSpaces(num_key), value);
                     } else {
@@ -1280,7 +1280,7 @@
                 for (int i = 0; i < count; i++) {
                     u64 allocation_size = 0;
                     char *key = root->cj_json.key_value_pair_vector[i].key;
-                    char *value = json_to_string_helper(arena, root->cj_json.key_value_pair_vector[i].value, depth);
+                    char *value = cj_to_string_helper(arena, root->cj_json.key_value_pair_vector[i].value, depth);
 
                     if (i == (count - 1)) {
                         buffers[i] = cj_sprint(arena, &allocation_size, "%s\"%s\": %s", generateSpaces(num_key), key, value); 
@@ -1307,9 +1307,9 @@
         return NULLPTR;
     }
 
-    char* json_to_string(JSON* root) {
+    char* cj_to_string(JSON* root) {
         CJ_Arena* temp_arena = cj_arena_create(KiloBytes(1));
-        char* ret = json_to_string_helper(temp_arena, root, 0);
+        char* ret = cj_to_string_helper(temp_arena, root, 0);
         cj_arena_free(temp_arena);
 
         return ret;
@@ -1821,7 +1821,7 @@
         }
     }
 
-    JSON* cj_Parse(CJ_Arena* arena, char* json_buffer) {
+    JSON* cj_parse(CJ_Arena* arena, char* json_buffer) {
         Lexer lexer = lexerCreate();
         CJ_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
 

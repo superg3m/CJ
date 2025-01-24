@@ -100,7 +100,13 @@ char* cj_sprint(CKG_Arena* arena, u64* allocation_size, char* fmt, ...) {
 
     va_start(args, fmt);
     ret_alloc = vsnprintf(NULLPTR, 0, fmt, args) + 1;
-    char* ret = MACRO_ckg_arena_push(arena, ret_alloc);
+    char* ret = NULLPTR;
+    if (arena != NULLPTR) {
+        ret = MACRO_ckg_arena_push(arena, ret_alloc);
+    } else {
+        ret = ckg_alloc(ret_alloc);
+    }
+
     vsnprintf(ret, ret_alloc, fmt, args);
     va_end(args);
 
@@ -137,7 +143,7 @@ internal char* json_to_string_helper(CKG_Arena* arena, JSON* root, int depth) {
         case CJ_TYPE_ARRAY: {
             depth += 1;
             int count = ckg_vector_count(root->cj_json.key_value_pair_vector);
-            char** buffers = ckg_alloc(sizeof(char*) * count);
+            char** buffers = ckg_arena_push_array(arena, char*, count);
             u64 total_allocation_size = sizeof("[]") - 1;
             for (int i = 0; i < count; i++) {
                 u64 allocation_size = 0;
@@ -170,8 +176,7 @@ internal char* json_to_string_helper(CKG_Arena* arena, JSON* root, int depth) {
             int num_key = depth * ckg_cstr_length(global_intend);
             int count = ckg_vector_count(root->cj_json.key_value_pair_vector);
 
-            char** buffers = ckg_alloc(sizeof(char*) * count);
-
+            char** buffers = ckg_arena_push_array(arena, char*, count);
             u64 total_allocation_size = sizeof("{\n%s}") - 1;
             for (int i = 0; i < count; i++) {
                 u64 allocation_size = 0;
@@ -186,14 +191,14 @@ internal char* json_to_string_helper(CKG_Arena* arena, JSON* root, int depth) {
                 total_allocation_size += allocation_size;
             }
 
-            char* ret = ckg_alloc(total_allocation_size);
+            char* ret = MACRO_ckg_arena_push(arena, total_allocation_size);
             ret[total_allocation_size - 1] = '\0';
             ckg_cstr_append(ret, total_allocation_size, "{\n");
             for (int i = 0; i < count; i++) {
                 ckg_cstr_append(ret, total_allocation_size, buffers[i]);
             }
             ckg_cstr_append(ret, total_allocation_size, "\n%s}");
-            ret = ckg_cstr_sprint(ret, generateSpaces(num_json));
+            ret = cj_sprint(NULLPTR, NULLPTR, ret, generateSpaces(num_json));
 
             return ret;
         } break;

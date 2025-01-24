@@ -55,4 +55,5 @@ dkms.conf
 !bootstrap.ps1
 build_*/
 c_build/
+ckg/
 .vscode/

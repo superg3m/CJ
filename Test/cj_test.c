@@ -1,8 +1,8 @@
 #include <cj.h>
 
 int main() {
-    // char* indent = "    "
-    // json_set_context_format(indent);
+    char* indent = "    ";
+    cj_set_context_indent(indent);
 
     JSON* root = cj_create();
     cj_push(root, "name", "Example");

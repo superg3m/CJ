@@ -95,3 +95,4 @@ JSON* JSON_NULL();
 )(value))
 
 char* json_to_string(JSON* root);
+void cj_set_context_indent(char* new_indent);

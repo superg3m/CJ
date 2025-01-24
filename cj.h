@@ -936,7 +936,13 @@
 
 #if defined(CJ_IMPL_CREATION) 
     JSON* cj_create(CJ_Arena* arena) {
-        JSON* ret = (JSON*)cj_arena_push(arena, JSON);
+        JSON* ret = NULLPTR;
+        if (arena != NULLPTR) {
+            ret = (JSON*)cj_arena_push(arena, JSON);
+        } else {
+            ret = cj_alloc(sizeof(JSON));
+        }
+
         ret->arena = arena;
         ret->type = CJ_TYPE_JSON;
 
@@ -944,7 +950,13 @@
     }
 
     JSON* cj_array_create(CJ_Arena* arena) {
-        JSON* ret = (JSON*)cj_arena_push(arena, JSON);
+        JSON* ret = NULLPTR;
+        if (arena != NULLPTR) {
+            ret = (JSON*)cj_arena_push(arena, JSON);
+        } else {
+            ret = cj_alloc(sizeof(JSON));
+        }
+
         ret->arena = arena;
         ret->type = CJ_TYPE_ARRAY;
 
@@ -1507,13 +1519,37 @@
     UNUSED_FUNCTION internal SPL_Token previousToken(Parser* parser) {
         return parser->tokens[parser->current - 1];
     }
+    /*
+    internal JSON* parseJSON(Parser* parser) {
+        while (consumeOnMatch(parser, SPL_TOKEN_STRING_LITERAL)) {
+            SPL_Token key = previousToken(parser);
+            JSON* value = parseJSON(parser);
+            expr = binaryOperation(parser, op, expr, right);
+        }
+
+        return expr;
+    }
+    */
 
     UNUSED_FUNCTION internal JSON* parseJSON(Parser* parser, SPL_Token* token_stream) {
         parser->current = 0;
         parser->tokens = token_stream;
         parser->tok = parser->tokens[parser->current];
 
+        //int count = cj_vector_count(parser->tokens);
+        //JSON* ret = cj_create(NULLPTR);
+        //expect(parser, SPL_TOKEN_LEFT_CURLY);
 
+        /*
+        for (int i = 0; i < count;) {
+            SPL_Token token = parser->tokens[i++];
+            if (token == SPL_TOKEN_STRING_LITERAL) {
+                token = parser->tokens[i++];
+                expect(parser, SPL_TOKEN_COLON);
+                if (cons)
+            }
+        }
+        */
 
         return NULLPTR;
     }

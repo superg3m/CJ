@@ -16,7 +16,7 @@ int main() {
     JSON* nested_twice = cj_create(arena);
     cj_push(nested_twice, "KylE", (Boolean)TRUE);
     cj_push(nested_twice, "ANdY", 84);
-    cj_push(nested_twice, "Jovanni", 3.141598f);
+    cj_push(nested_twice, "Jovanni", 3.141598);
     cj_push(nested_twice, "Hykes", (Boolean)FALSE);
     cj_push(nested_twice, "Conrad", JSON_NULL(arena));
 
@@ -31,20 +31,18 @@ int main() {
 
     char* str = json_to_string(root);
     printf("%s\n", str);
-    cj_arena_free(arena);
     free(str);
 
     // u8* source_data = cj_os_read_entire_file(file_path, &file_size);
 
-    char* test_json = "{ \"test\": -5 }";
-    Lexer lexer = lexerCreate();
-    SPL_Token* token_stream = lexerGenerateTokenStream(&lexer, test_json, cj_cstr_length(test_json));
+    char* test_json = "{ \"test\": -5, \"WOW\": null, \"sad\": [1, null, true, false, 523.234] }";
 
-    printf("------------ LEXICAL ANALYSIS ------------\n");
-    for (u64 i = 0; i < cj_vector_count(token_stream); i++ ) {
-        SPL_Token token = token_stream[i];
-        printf("%s(%s) | Line: %llu\n", tokenTypeToString(token.type), token.lexeme, token.line);
-    }
+    printf("------------ PARSING ------------\n");
+    JSON* json_test_parse = parse_json_buffer(arena, test_json);
+    char* str2 = json_to_string(json_test_parse);
+    printf("%s\n", str2);
+    cj_arena_free(arena);
+    free(str);
 
     return 0;
 }

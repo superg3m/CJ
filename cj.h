@@ -225,6 +225,9 @@
 	CJ_API void cj_cstr_append_char(char* string_buffer, size_t string_buffer_capacity, const char to_append);
     char* cj_substring(char* str, u64 start, u64 end);
     Boolean cj_cstr_equal(const char* s1, const char* s2);
+    u32 cj_cstr_index_of(const char* str, const char* sub_string);
+    char* cj_str_between_delimiters(const char* str, const char* start_delimitor, const char* end_delimitor);
+    Boolean cj_cstr_contains(const char* str, const char* contains);
 #endif
 
 #if defined(CJ_INCLUDE_ARENA)
@@ -232,6 +235,7 @@
     #define CJ_ARENA_FLAG_CIRCULAR 1
     #define CJ_ARENA_FLAG_EXTENDABLE_PAGES 2
     #define CJ_ARENA_FLAG_COUNT 3
+
     typedef u8 CJ_ArenaFlag;
     typedef struct CJ_Arena CJ_Arena;
 
@@ -278,7 +282,7 @@
         union {
             Boolean cj_bool;
             char* cj_string;
-            float cj_float;
+            double cj_float;
             int cj_int; 
             char* cj_null; // "null\0"
             CJ_Array cj_array;
@@ -294,7 +298,7 @@
     void MACRO_cj_array_push(JSON* array, JSON* value);
 
     JSON* JSON_INT(CJ_Arena* arena, int value);
-    JSON* JSON_FLOAT(CJ_Arena* arena, float value);
+    JSON* JSON_FLOAT(CJ_Arena* arena, double value);
     JSON* JSON_STRING(CJ_Arena* arena, char* value);
     JSON* JSON_BOOL(CJ_Arena* arena, Boolean value);
     JSON* JSON_JSON(CJ_Arena* arena, JSON* json);
@@ -306,7 +310,7 @@
         const char[sizeof(value)]: JSON_STRING,              \
         char*: JSON_STRING,               \
         const char*: JSON_STRING,         \
-        float: JSON_FLOAT,                \
+        double: JSON_FLOAT,                \
         int: JSON_INT,                    \
         JSON*: JSON_JSON                 \
     )(root->arena, value))
@@ -361,30 +365,13 @@
     const char* tokenTypeToString(SPL_TokenType type);
 #endif
 
-#if defined(CJ_INCLUDE_LEXER)
-    typedef struct Lexer {
-        u64 left_pos;
-        u64 right_pos;
-        u64 line;
-
-        u8 c;
-        char* source;
-        u64 source_size;
-
-        SPL_Token* tokens;
-    } Lexer;
-
-    Lexer lexerCreate();
-    SPL_Token* lexerGenerateTokenStream(Lexer* lexer, char* file_data, u64 file_size);
-#endif
-
 #if defined(CJ_INCLUDE_PARSING)
-    JSON* parse_json_buffer(char* json_buffer);
+    JSON* parse_json_buffer(CJ_Arena* arena, char* json_buffer);
 
     typedef struct Parser {
         SPL_Token* tokens;
         SPL_Token tok;
-        int current;
+        u64 current;
         CJ_Arena* arena_allocator;
     } Parser;
 
@@ -795,7 +782,7 @@
     void cj_cstr_append_char(char* str, size_t str_capacity, const char to_append) {
         u32 str_length = cj_cstr_length(str);
         cj_assert((str_length + 1) < str_capacity);
-        str[str_length + 1] = to_append;
+        str[str_length] = to_append;
     }
 
     char* cj_substring(char* str, u64 start, u64 end) {
@@ -806,9 +793,9 @@
         Boolean start_check = (start >= 0) && (start <= str_length - 1);
         Boolean end_check = (end >= 0) && (end <= str_length - 1);
 
-        cj_assert_msg(start_check, "ckg_substring: Start range is outside expected range: [%d - %llu] got: %llu\n", 0, str_length - 1, start);
-        cj_assert_msg(end_check, "ckg_substring: End range is outside expected range: [%d - %llu] got: %lld\n", 0, str_length - 1, end);
-        cj_assert_msg(start <= end, "ckg_substring: Start range is greater than end range[start: %llu > end: %llu]\n", start, end);
+        cj_assert_msg(start_check, "cj_substring: Start range is outside expected range: [%d - %llu] got: %llu\n", 0, str_length - 1, start);
+        cj_assert_msg(end_check, "cj_substring: End range is outside expected range: [%d - %llu] got: %lld\n", 0, str_length - 1, end);
+        cj_assert_msg(start <= end, "cj_substring: Start range is greater than end range[start: %llu > end: %llu]\n", start, end);
 
         //char* str = "hello"
         //0 - 4 = hello\0 = 6
@@ -833,6 +820,186 @@
         u32 s2_length = cj_cstr_length(s2);
 
         return cj_memory_compare(s1, s2, s1_length, s2_length);
+    }
+
+    u32 cj_cstr_index_of(const char* str, const char* sub_string) {
+        cj_assert(str);
+        cj_assert(sub_string);
+        
+        size_t str_length = cj_cstr_length(str); 
+        size_t contains_length = cj_cstr_length(sub_string);
+
+        if (str_length == 0 && contains_length == 0) {
+            return 0;
+        } else if (contains_length == 0) {
+		    cj_assert_msg(FALSE, "Substring is empty\n");		
+            return 0; // Never gets here
+        } else if (str_length == 0) {
+			cj_assert_msg(FALSE, "String is empty\n");		
+            return 0; // Never gets here
+        }
+
+        if (contains_length > str_length) {
+        	cj_assert_msg(FALSE, "Can't find substring %s in string %s\n", sub_string, str);		
+            return 0; // Never gets here
+        }
+        
+        s32 ret_index = -1;
+        for (u32 i = 0; i <= str_length - contains_length; i++) {
+            if (ret_index != -1) {
+                break;
+            }
+            
+            if (str[i] != sub_string[0]) {
+                continue;
+            }
+
+            s32 end_index = (u32)(i + (contains_length - 1));
+            if (end_index > str_length) {
+                break;
+            }
+
+            char* temp_string = cj_substring((char*)str, i, end_index);
+            if (cj_cstr_equal(temp_string, sub_string)) {
+                ret_index = i;
+            }
+            cj_free(temp_string);
+        }
+
+        if (ret_index < 0) {
+            cj_assert_msg(FALSE, "Can't find substring %s in string %s\n", sub_string, str);		
+            return 0; // Never gets here
+        }
+
+        return ret_index;
+    }
+
+    u32 cj_cstr_last_index_of(const char* str, const char* sub_string) {
+        cj_assert(str);
+        cj_assert(sub_string);
+        
+        size_t str_length = cj_cstr_length(str); 
+        size_t contains_length = cj_cstr_length(sub_string);
+
+        if (str_length == 0 && contains_length == 0) {
+            return 0;
+        } else if (contains_length == 0) {
+			cj_assert_msg(FALSE, "Substring is empty\n");		
+            return 0; // Never gets here
+        } else if (str_length == 0) {
+			cj_assert_msg(FALSE, "String is empty\n");		
+            return 0; // Never gets here
+        }
+
+        if (contains_length > str_length) {
+            cj_assert_msg(FALSE, "Can't find substring %s in string %s\n", sub_string, str);		
+            return 0; // Never gets here
+        }
+        
+        s32 ret_index = -1;
+        for (u32 i = 0; i <= str_length - contains_length; i++) {
+            if (str[i] != sub_string[0]) {
+                continue;
+            }
+
+            s32 end_index = (u32)(i + (contains_length - 1));
+            if (end_index > str_length) {
+                break;
+            }
+
+            char* temp_string = cj_substring((char*)str, i, end_index);
+            if (cj_cstr_equal(temp_string, sub_string)) {
+                ret_index = i;
+            }
+            cj_free(temp_string);
+        }
+
+        if (ret_index < 0) {
+            cj_assert_msg(FALSE, "Can't find substring %s in string %s\n", sub_string, str);		
+            return 0; // Never gets here
+        }
+
+        return ret_index;
+    }
+
+    Boolean cj_cstr_contains(const char* str, const char* contains) {
+        cj_assert(str);
+        cj_assert(contains);
+
+        size_t str_length = cj_cstr_length(str); 
+        size_t contains_length = cj_cstr_length(contains);
+
+        if (str_length == 0 && contains_length == 0) {
+            return TRUE;
+        } else if ((contains_length == 0) || (str_length == 0)) {
+            return FALSE;
+        }
+
+        if (contains_length > str_length) {
+            return FALSE;
+        }
+
+        // "\0" = 0
+        // "a\0" = 0
+        // "fss\0" = 2
+        
+        Boolean contains_substring = FALSE;
+        for (u32 i = 0; !contains_substring && (i <= str_length - contains_length); i++) {
+            if (str[i] != contains[0]) {
+                continue;
+            }
+
+            u32 end_index = (u32)(i + (contains_length - 1));
+            if (end_index > str_length) {
+                break;
+            }
+
+            char* temp_string = cj_substring((char*)str, i, end_index);
+            if (cj_cstr_equal(temp_string, contains)) {
+                contains_substring = TRUE;
+            }
+            cj_free(temp_string);
+        }
+
+        return contains_substring;
+    }
+
+    char* cj_cstr_between_delimiters(const char* str, const char* start_delimitor, const char* end_delimitor) {
+        cj_assert(str);
+        cj_assert(start_delimitor);
+        cj_assert(end_delimitor);
+
+        if (!cj_cstr_contains(str, start_delimitor) || !cj_cstr_contains(str, end_delimitor)) {
+            return NULLPTR;
+        }
+
+        u32 start_delimitor_length = cj_cstr_length(start_delimitor);
+
+        s32 start_delimitor_index = cj_cstr_index_of(str, start_delimitor);
+        s32 end_delimitor_index = cj_cstr_index_of(str, end_delimitor); 
+
+        if (cj_cstr_equal(start_delimitor, end_delimitor)) {
+            end_delimitor_index = cj_cstr_last_index_of(str, end_delimitor);
+        }
+
+        u64 allocation_size = cj_cstr_length(str) + 1;
+        char* ret = cj_alloc(allocation_size); // techinally allocating more than I need here
+
+        if (start_delimitor_index == -1 || end_delimitor_index == -1) {
+            return NULLPTR;
+        }
+
+        if (start_delimitor_index > end_delimitor_index) {
+            return NULLPTR; // The start delimtor is after the end delimitor
+        }
+
+        u32 i = start_delimitor_index + start_delimitor_length;
+
+        while (i < (u32)end_delimitor_index) {
+            cj_cstr_append_char(ret, allocation_size, str[i++]);
+        }
+
+        return ret;
     }
 #endif
 
@@ -985,7 +1152,7 @@
         cj_vector_push(root->cj_array.jsonVector, value);
     }
 
-    JSON* JSON_INT(CJ_Arena* arena,int value) {
+    JSON* JSON_INT(CJ_Arena* arena, int value) {
         JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_INT;
         ret->cj_int = value;
@@ -993,7 +1160,7 @@
         return ret;
     }
 
-    JSON* JSON_FLOAT(CJ_Arena* arena, float value) {
+    JSON* JSON_FLOAT(CJ_Arena* arena, double value) {
         JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_FLOAT;
         ret->cj_float = value;
@@ -1068,6 +1235,23 @@
         return ret;
     }
 
+    int calculate_precision(double value) {
+        char buffer[64];
+        
+        snprintf(buffer, sizeof(buffer), "%.15g", value);
+        char* decimal_point = strchr(buffer, '.');
+        if (!decimal_point) {
+            return 0;
+        }
+
+        char* end = buffer + strlen(buffer) - 1;
+        while (*end == '0') {
+            end--;
+        }
+
+        return (int)(end - decimal_point);
+    }
+
     internal char* json_to_string_helper(CJ_Arena* arena, JSON* root, int depth) {
         switch (root->type) {
             case CJ_TYPE_BOOL: {
@@ -1080,7 +1264,9 @@
             } break;
 
             case CJ_TYPE_FLOAT: {
-                return cj_sprint(arena, NULLPTR, "%f",  root->cj_float);
+                int precision = calculate_precision(root->cj_float);
+                printf("PRECISION: %d\n", precision);
+                return cj_sprint(arena, NULLPTR, "%.*f\n", precision, root->cj_float);
             } break;
 
             case CJ_TYPE_STRING: {
@@ -1132,7 +1318,7 @@
                 int count = cj_vector_count(root->cj_json.key_value_pair_vector);
 
                 char** buffers = cj_arena_push_array(arena, char*, count);
-                u64 total_allocation_size = sizeof("{\n%s}") - 1;
+                u64 total_allocation_size = sizeof("{\n\n%s}") - 1;
                 for (int i = 0; i < count; i++) {
                     u64 allocation_size = 0;
                     char *key = root->cj_json.key_value_pair_vector[i].key;
@@ -1209,6 +1395,18 @@
 #endif
 
 #if defined (CJ_IMPL_LEXER)
+    typedef struct Lexer {
+        u64 left_pos;
+        u64 right_pos;
+        u64 line;
+
+        u8 c;
+        char* source;
+        u64 source_size;
+
+        SPL_Token* tokens;
+    } Lexer;
+
     internal Boolean isWhitespace(char c) {
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
@@ -1381,6 +1579,10 @@
     internal void tryConsumeDigitLiteral(Lexer* lexer) {
         SPL_TokenType kind = SPL_TOKEN_INTEGER_LITERAL;
 
+        if (lexer->c == '-') {
+            consumeNextChar(lexer);
+        }
+
         while (isdigit(peekNthChar(lexer, 0)) || peekNthChar(lexer, 0) == '.') {
             if (lexer->c == '.') {
                 kind = SPL_TOKEN_FLOAT_LITERAL;
@@ -1394,7 +1596,7 @@
 
 
     internal Boolean consumeLiteral(Lexer* lexer) {
-        if (isdigit(lexer->c)) {
+        if (isdigit(lexer->c) || (lexer->c == '-' && isdigit(peekNthChar(lexer, 0)))) {
             tryConsumeDigitLiteral(lexer);
             return TRUE;
         } else if (lexer->c == '\"') {
@@ -1445,7 +1647,7 @@
         }
     }
 
-    SPL_Token* lexerGenerateTokenStream(Lexer* lexer, char* file_data, u64 file_size) {
+    internal SPL_Token* lexerGenerateTokenStream(Lexer* lexer, char* file_data, u64 file_size) {
         lexer->source = file_data;
         lexer->source_size = file_size;
 
@@ -1459,19 +1661,6 @@
 #endif
 
 #if defined(CJ_IMPL_PARSING)
-    // if you have a { token append JSON
-
-    // if you have "": $value, | append key and make sure there is another one
-    // if you have "": $value  | append key
-
-    // if you have 5 append primary
-    // if you have true append bool
-    // if you have null append JSON_NULL()
-    // if you have a [] append JSON_Array
-    // if you have ""
-
-    JSON* parseExpression(Parser* parser);
-
     Parser parserCreate() {
         Parser ret;
         ret.tokens = NULLPTR;
@@ -1519,48 +1708,132 @@
     UNUSED_FUNCTION internal SPL_Token previousToken(Parser* parser) {
         return parser->tokens[parser->current - 1];
     }
-    /*
-    internal JSON* parseJSON(Parser* parser) {
-        while (consumeOnMatch(parser, SPL_TOKEN_STRING_LITERAL)) {
-            SPL_Token key = previousToken(parser);
-            JSON* value = parseJSON(parser);
-            expr = binaryOperation(parser, op, expr, right);
+
+    // if you have a { token append JSON
+
+    // if you have "": $value, | append key and make sure there is another one
+    // if you have "": $value  | append key
+
+    // if you have 5 append primary
+    // if you have true append bool
+    // if you have null append JSON_NULL()
+    // if you have a [] append JSON_Array
+    // if you have ""
+
+    internal JSON* parseJSON(Parser* parser, CJ_Arena* arena) {
+        if (parser->current >= cj_vector_count(parser->tokens)) {
+            return NULLPTR; // End of tokens
         }
 
-        return expr;
-    }
-    */
+        parser_consumeNextToken(parser);
 
-    UNUSED_FUNCTION internal JSON* parseJSON(Parser* parser, SPL_Token* token_stream) {
-        parser->current = 0;
-        parser->tokens = token_stream;
-        parser->tok = parser->tokens[parser->current];
+        switch (parser->tok.type) {
+            case SPL_TOKEN_TRUE: {
+                return JSON_BOOL(arena, TRUE);
+            }
 
-        //int count = cj_vector_count(parser->tokens);
-        //JSON* ret = cj_create(NULLPTR);
-        //expect(parser, SPL_TOKEN_LEFT_CURLY);
+            case SPL_TOKEN_FALSE: {
+                return JSON_BOOL(arena, FALSE);
+            }
 
-        /*
-        for (int i = 0; i < count;) {
-            SPL_Token token = parser->tokens[i++];
-            if (token == SPL_TOKEN_STRING_LITERAL) {
-                token = parser->tokens[i++];
-                expect(parser, SPL_TOKEN_COLON);
-                if (cons)
+            case SPL_TOKEN_MINUS: {
+                parser_consumeNextToken(parser);
+                if (parser->tok.type == SPL_TOKEN_INTEGER_LITERAL) {
+                    return JSON_INT(arena, atoi(parser->tok.lexeme));
+                } else if (parser->tok.type == SPL_TOKEN_FLOAT_LITERAL) {
+                    return JSON_FLOAT(arena, atof(parser->tok.lexeme));
+                }
+            }
+
+            case SPL_TOKEN_INTEGER_LITERAL: {
+                return JSON_INT(arena, atoi(parser->tok.lexeme));
+            }
+
+            case SPL_TOKEN_FLOAT_LITERAL: {
+                return JSON_FLOAT(arena, atof(parser->tok.lexeme));
+            }
+
+            case SPL_TOKEN_STRING_LITERAL: {
+                char* str_in_between_quotes = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
+                return JSON_STRING(arena, str_in_between_quotes);
+            }
+
+            case SPL_TOKEN_NULL: {
+                return JSON_NULL(arena);
+            }
+
+            case SPL_TOKEN_LEFT_BRACKET: { // Parse array
+                JSON* array = cj_array_create(arena);
+                while (!parser_consumeOnMatch(parser, SPL_TOKEN_RIGHT_BRACKET)) {
+                    JSON* element = parseJSON(parser, arena);
+                    if (!element) {
+                        cj_assert(FALSE); // Invalid JSON array element
+                        return NULLPTR;
+                    }
+
+                    cj_vector_push(array->cj_array.jsonVector, element);
+
+                    if (!parser_consumeOnMatch(parser, SPL_TOKEN_COMMA)) {
+                        break; // End of array
+                    }
+                }
+
+                return array;
+            }
+
+            case SPL_TOKEN_LEFT_CURLY: { // Parse object
+                JSON* jsonObject = cj_create(arena);
+
+                while (!parser_consumeOnMatch(parser, SPL_TOKEN_RIGHT_CURLY)) {
+                    if (!parser_consumeOnMatch(parser, SPL_TOKEN_STRING_LITERAL)) {
+                        cj_assert(FALSE); // Expected key
+                        return NULLPTR;
+                    }
+
+                    char* key = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
+
+                    if (!parser_consumeOnMatch(parser, SPL_TOKEN_COLON)) {
+                        cj_assert(FALSE); // Expected colon
+                        return NULLPTR;
+                    }
+
+                    JSON* value = parseJSON(parser, arena);
+                    if (!value) {
+                        cj_assert(FALSE); // Invalid value
+                        return NULLPTR;
+                    }
+
+                    JSON_KEY_VALUE pair;
+                    pair.key = key;
+                    pair.value = value;
+
+                    cj_vector_push(jsonObject->cj_json.key_value_pair_vector, pair);
+
+                    if (!parser_consumeOnMatch(parser, SPL_TOKEN_COMMA)) {
+                        break; // End of object
+                    }
+                }
+
+                return jsonObject;
+            }
+
+            default: {
+                cj_assert(FALSE); // Unexpected token
+                return NULLPTR;
             }
         }
-        */
-
-        return NULLPTR;
     }
 
-    JSON* parse_json_buffer(char* json_buffer) {
+    JSON* parse_json_buffer(CJ_Arena* arena, char* json_buffer) {
         Lexer lexer = lexerCreate();
         SPL_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
 
         Parser parser = parserCreate();
-        JSON* ret = parseJSON(&parser, token_stream);
+        parser.current = 0;
+        parser.tokens = token_stream;
 
-        return ret;
+        JSON* root = parseJSON(&parser, arena);
+        return root;
     }
+
 #endif

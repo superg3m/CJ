@@ -1330,7 +1330,6 @@
         CJ_TOKEN_STRING_LITERAL,             // "TESTING
         CJ_TOKEN_INTEGER_LITERAL,            // 6
         CJ_TOKEN_FLOAT_LITERAL,              // 2.523
-        CJ_TOKEN_CHARACTER_LITERAL,          // 'a'
         CJ_TOKEN_TRUE,                       // true
         CJ_TOKEN_FALSE,                      // false
         CJ_TOKEN_NULL,                       // null
@@ -1360,7 +1359,6 @@
         stringify(CJ_TOKEN_STRING_LITERAL),
         stringify(CJ_TOKEN_INTEGER_LITERAL),
         stringify(CJ_TOKEN_FLOAT_LITERAL),
-        stringify(CJ_TOKEN_CHARACTER_LITERAL),
         stringify(CJ_TOKEN_TRUE),
         stringify(CJ_TOKEN_FALSE),
         stringify(CJ_TOKEN_NULL),
@@ -1544,24 +1542,6 @@
     }
 
 
-    internal void tryConsumeCharacterLiteral(CJ_Lexer* lexer) {
-        if (lexer_consumeOnMatch(lexer, '\'')) {
-            lexer_reportError(lexer, "character literal doesn't have any ascii data in between");
-        }
-
-        while (peekNthChar(lexer, 0) != '\'') {
-            if (isEOF(lexer)) {
-                lexer_reportError(lexer, "character literal doesn't have a closing quote!");
-            }
-
-            consumeNextChar(lexer);
-        }
-
-        consumeNextChar(lexer);
-        addToken(lexer, CJ_TOKEN_CHARACTER_LITERAL);
-    }
-
-
     internal void tryConsumeDigitLiteral(CJ_Lexer* lexer) {
         CJ_TokenType kind = CJ_TOKEN_INTEGER_LITERAL;
 
@@ -1587,9 +1567,6 @@
             return TRUE;
         } else if (lexer->c == '\"') {
             tryConsumeStringLiteral(lexer);
-            return TRUE;
-        } else if (lexer->c == '\'') {
-            tryConsumeCharacterLiteral(lexer);
             return TRUE;
         } else {
             return FALSE;
@@ -1804,9 +1781,7 @@
 
                     cj_vector_push(jsonObject->cj_json.key_value_pair_vector, pair);
 
-                    if (!parser_consumeOnMatch(parser, CJ_TOKEN_COMMA)) {
-                        break; // End of object
-                    }
+                    parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
                 }
 
                 return jsonObject;
@@ -1826,9 +1801,9 @@
         CJ_Parser parser = cj_parserCreate();
         parser.current = 0;
         parser.tokens = token_stream;
+        JSON* root = parseJSON(&parser, arena);
         cj_parserFree(&parser);
 
-        JSON* root = parseJSON(&parser, arena);
         return root;
     }
 

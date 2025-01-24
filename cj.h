@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef __cplusplus
+#ifdef __cpluCJus
     #define CJ_API extern "C"
 #else 
     #define CJ_API
@@ -16,7 +16,7 @@
     #define CJ_IMPL_CREATION
     #define CJ_IMPL_FORMATTED_BUFFER
 
-    #define CJ_IMPL_SPL_TOKEN
+    #define CJ_IMPL_CJ_TOKEN
     #define CJ_IMPL_LEXER
     #define CJ_IMPL_PARSING
 #endif
@@ -31,7 +31,7 @@
 #define CJ_INCLUDE_CREATION
 #define CJ_INCLUDE_FORMATTED_BUFFER
 
-#define CJ_INCLUDE_SPL_TOKEN
+#define CJ_INCLUDE_CJ_TOKEN
 #define CJ_INCLUDE_LEXER
 #define CJ_INCLUDE_PARSING
 
@@ -165,7 +165,7 @@
     #define cj_vector_count(vector) (*cj_vector_header_base(vector)).count
     #define cj_vector_capacity(vector) (*cj_vector_header_base(vector)).capacity
 
-    #ifdef __cplusplus
+    #ifdef __cpluCJus
         #define cj_vector_push(vector, element) vector = (decltype(vector))cj_vector_grow(vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
     #else 
         #define cj_vector_push(vector, element) vector = cj_vector_grow(vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
@@ -208,7 +208,7 @@
 
     #define cj_linked_list_create(type, is_pointer_type) MACRO_cj_linked_list_create(sizeof(type), is_pointer_type)
 
-    #ifdef __cplusplus
+    #ifdef __cpluCJus
         #define cj_linked_list_free(linked_list) linked_list = (decltype(linked_list))MACRO_cj_linked_list_free(linked_list)
     #else 
         #define cj_linked_list_free(linked_list) linked_list = MACRO_cj_linked_list_free(linked_list)
@@ -333,49 +333,8 @@
     CJ_API void cj_set_context_indent(char* new_indent);
 #endif
 
-#if defined(CJ_INCLUDE_SPL_TOKEN)
-    typedef enum SPL_TokenType {
-        SPL_TOKEN_ILLEGAL_TOKEN,
-        SPL_TOKEN_EOF,
-        SPL_TOKEN_LEFT_PAREN,                 // "("
-        SPL_TOKEN_RIGHT_PAREN,                // ")"
-        SPL_TOKEN_COMMA,                      // ","
-        SPL_TOKEN_MINUS,                      // "-"
-        SPL_TOKEN_LEFT_BRACKET,               // "["
-        SPL_TOKEN_RIGHT_BRACKET,              // "]"
-        SPL_TOKEN_LEFT_CURLY,                 // "{"
-        SPL_TOKEN_RIGHT_CURLY,                // "}"
-        SPL_TOKEN_COLON,                      // ":"
-        SPL_TOKEN_STRING_LITERAL,             // "TESTING
-        SPL_TOKEN_INTEGER_LITERAL,            // 6
-        SPL_TOKEN_FLOAT_LITERAL,              // 2.523
-        SPL_TOKEN_CHARACTER_LITERAL,          // 'a'
-        SPL_TOKEN_TRUE,                       // true
-        SPL_TOKEN_FALSE,                      // false
-        SPL_TOKEN_NULL,                       // null
-        SPL_TOKEN_COUNT
-    } SPL_TokenType;
-
-    typedef struct SPL_Token {
-        char *lexeme;
-        SPL_TokenType type;
-        u64 line;
-    } SPL_Token;
-
-    const char* tokenTypeToString(SPL_TokenType type);
-#endif
-
 #if defined(CJ_INCLUDE_PARSING)
     JSON* parse_json_buffer(CJ_Arena* arena, char* json_buffer);
-
-    typedef struct Parser {
-        SPL_Token* tokens;
-        SPL_Token tok;
-        u64 current;
-        CJ_Arena* arena_allocator;
-    } Parser;
-
-    Parser parserCreate();
 #endif
 
 //
@@ -1265,7 +1224,6 @@
 
             case CJ_TYPE_FLOAT: {
                 int precision = calculate_precision(root->cj_float);
-                printf("PRECISION: %d\n", precision);
                 return cj_sprint(arena, NULLPTR, "%.*f", precision, root->cj_float);
             } break;
 
@@ -1358,34 +1316,64 @@
     }
 #endif
 
-#if defined(CJ_IMPL_SPL_TOKEN)
-    internal const char* lookup_table[SPL_TOKEN_COUNT] = {
-        stringify(SPL_TOKEN_ILLEGAL_TOKEN),
-        stringify(SPL_TOKEN_EOF),
-        stringify(SPL_TOKEN_LEFT_PAREN),
-        stringify(SPL_TOKEN_RIGHT_PAREN),
-        stringify(SPL_TOKEN_COMMA),
-        stringify(SPL_TOKEN_MINUS),
-        stringify(SPL_TOKEN_LEFT_BRACKET),
-        stringify(SPL_TOKEN_RIGHT_BRACKET),
-        stringify(SPL_TOKEN_LEFT_CURLY),
-        stringify(SPL_TOKEN_RIGHT_CURLY),
-        stringify(SPL_TOKEN_COLON),
-        stringify(SPL_TOKEN_STRING_LITERAL),
-        stringify(SPL_TOKEN_INTEGER_LITERAL),
-        stringify(SPL_TOKEN_FLOAT_LITERAL),
-        stringify(SPL_TOKEN_CHARACTER_LITERAL),
-        stringify(SPL_TOKEN_TRUE),
-        stringify(SPL_TOKEN_FALSE),
-        stringify(SPL_TOKEN_NULL),
+#if defined(CJ_IMPL_CJ_TOKEN)
+    typedef enum CJ_TokenType {
+        CJ_TOKEN_ILLEGAL_TOKEN,
+        CJ_TOKEN_EOF,
+        CJ_TOKEN_LEFT_PAREN,                 // "("
+        CJ_TOKEN_RIGHT_PAREN,                // ")"
+        CJ_TOKEN_COMMA,                      // ","
+        CJ_TOKEN_MINUS,                      // "-"
+        CJ_TOKEN_LEFT_BRACKET,               // "["
+        CJ_TOKEN_RIGHT_BRACKET,              // "]"
+        CJ_TOKEN_LEFT_CURLY,                 // "{"
+        CJ_TOKEN_RIGHT_CURLY,                // "}"
+        CJ_TOKEN_COLON,                      // ":"
+        CJ_TOKEN_STRING_LITERAL,             // "TESTING
+        CJ_TOKEN_INTEGER_LITERAL,            // 6
+        CJ_TOKEN_FLOAT_LITERAL,              // 2.523
+        CJ_TOKEN_CHARACTER_LITERAL,          // 'a'
+        CJ_TOKEN_TRUE,                       // true
+        CJ_TOKEN_FALSE,                      // false
+        CJ_TOKEN_NULL,                       // null
+        CJ_TOKEN_COUNT
+    } CJ_TokenType;
+
+    typedef struct CJ_Token {
+        char *lexeme;
+        CJ_TokenType type;
+        u64 line;
+    } CJ_Token;
+
+    const char* tokenTypeToString(CJ_TokenType type);
+
+    internal const char* lookup_table[CJ_TOKEN_COUNT] = {
+        stringify(CJ_TOKEN_ILLEGAL_TOKEN),
+        stringify(CJ_TOKEN_EOF),
+        stringify(CJ_TOKEN_LEFT_PAREN),
+        stringify(CJ_TOKEN_RIGHT_PAREN),
+        stringify(CJ_TOKEN_COMMA),
+        stringify(CJ_TOKEN_MINUS),
+        stringify(CJ_TOKEN_LEFT_BRACKET),
+        stringify(CJ_TOKEN_RIGHT_BRACKET),
+        stringify(CJ_TOKEN_LEFT_CURLY),
+        stringify(CJ_TOKEN_RIGHT_CURLY),
+        stringify(CJ_TOKEN_COLON),
+        stringify(CJ_TOKEN_STRING_LITERAL),
+        stringify(CJ_TOKEN_INTEGER_LITERAL),
+        stringify(CJ_TOKEN_FLOAT_LITERAL),
+        stringify(CJ_TOKEN_CHARACTER_LITERAL),
+        stringify(CJ_TOKEN_TRUE),
+        stringify(CJ_TOKEN_FALSE),
+        stringify(CJ_TOKEN_NULL),
     };
 
-    const char* tokenTypeToString(SPL_TokenType type) {
+    const char* tokenTypeToString(CJ_TokenType type) {
         return lookup_table[type];
     }
 
-    const SPL_Token tokenCreate(SPL_TokenType type, char* lexeme, u64 line) {
-        SPL_Token ret = {0};
+    const CJ_Token tokenCreate(CJ_TokenType type, char* lexeme, u64 line) {
+        CJ_Token ret = {0};
         ret.lexeme = lexeme;
         ret.type = type;
         ret.line = line;
@@ -1404,14 +1392,14 @@
         char* source;
         u64 source_size;
 
-        SPL_Token* tokens;
+        CJ_Token* tokens;
     } Lexer;
 
     internal Boolean isWhitespace(char c) {
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
 
-    Lexer lexerCreate() {
+    internal Lexer lexerCreate() {
         Lexer lexer = {0};
 
         lexer.left_pos  = 0;
@@ -1437,17 +1425,17 @@
         return cj_substring(lexer->source, lexer->left_pos, lexer->right_pos - 1);
     }
 
-    internal SPL_TokenType getAcceptedSyntax(Lexer* lexer) {
+    internal CJ_TokenType getAcceptedSyntax(Lexer* lexer) {
         internal char syntaxLookup[] = { 
             '(', ')', ',', '-',
             '[', ']', '{', '}', ':'
         };
 
-        internal SPL_TokenType syntaxTokenTable[] = {
-            SPL_TOKEN_LEFT_PAREN, SPL_TOKEN_RIGHT_PAREN,
-            SPL_TOKEN_COMMA, SPL_TOKEN_MINUS,
-            SPL_TOKEN_LEFT_BRACKET, SPL_TOKEN_RIGHT_BRACKET, 
-            SPL_TOKEN_LEFT_CURLY, SPL_TOKEN_RIGHT_CURLY, SPL_TOKEN_COLON
+        internal CJ_TokenType syntaxTokenTable[] = {
+            CJ_TOKEN_LEFT_PAREN, CJ_TOKEN_RIGHT_PAREN,
+            CJ_TOKEN_COMMA, CJ_TOKEN_MINUS,
+            CJ_TOKEN_LEFT_BRACKET, CJ_TOKEN_RIGHT_BRACKET, 
+            CJ_TOKEN_LEFT_CURLY, CJ_TOKEN_RIGHT_CURLY, CJ_TOKEN_COLON
         };
 
         for (int i = 0; i < ArrayCount(syntaxTokenTable); i++) {
@@ -1457,12 +1445,12 @@
             }
         }
 
-        return SPL_TOKEN_ILLEGAL_TOKEN;
+        return CJ_TOKEN_ILLEGAL_TOKEN;
     }
 
-    internal SPL_TokenType getAcceptedKeyword(Lexer* lexer) {
-        internal SPL_TokenType keywordTokenTable[] = {
-            SPL_TOKEN_TRUE, SPL_TOKEN_FALSE, SPL_TOKEN_NULL,
+    internal CJ_TokenType getAcceptedKeyword(Lexer* lexer) {
+        internal CJ_TokenType keywordTokenTable[] = {
+            CJ_TOKEN_TRUE, CJ_TOKEN_FALSE, CJ_TOKEN_NULL,
         };
 
         internal char* keywords[] = {
@@ -1476,7 +1464,7 @@
             }
         }
 
-        return SPL_TOKEN_ILLEGAL_TOKEN;
+        return CJ_TOKEN_ILLEGAL_TOKEN;
     }
 
     internal Boolean isEOF(Lexer* lexer) {
@@ -1505,7 +1493,7 @@
         return TRUE;
     }
 
-    internal void addToken(Lexer* lexer, SPL_TokenType type) {
+    internal void addToken(Lexer* lexer, CJ_TokenType type) {
         cj_vector_push(lexer->tokens, tokenCreate(type, getScratchBuffer(lexer), lexer->line));
     }
 
@@ -1554,7 +1542,7 @@
         }
 
         consumeNextChar(lexer);
-        addToken(lexer, SPL_TOKEN_STRING_LITERAL);
+        addToken(lexer, CJ_TOKEN_STRING_LITERAL);
     }
 
 
@@ -1572,12 +1560,12 @@
         }
 
         consumeNextChar(lexer);
-        addToken(lexer, SPL_TOKEN_CHARACTER_LITERAL);
+        addToken(lexer, CJ_TOKEN_CHARACTER_LITERAL);
     }
 
 
     internal void tryConsumeDigitLiteral(Lexer* lexer) {
-        SPL_TokenType kind = SPL_TOKEN_INTEGER_LITERAL;
+        CJ_TokenType kind = CJ_TOKEN_INTEGER_LITERAL;
 
         if (lexer->c == '-') {
             consumeNextChar(lexer);
@@ -1585,7 +1573,7 @@
 
         while (isdigit(peekNthChar(lexer, 0)) || peekNthChar(lexer, 0) == '.') {
             if (lexer->c == '.') {
-                kind = SPL_TOKEN_FLOAT_LITERAL;
+                kind = CJ_TOKEN_FLOAT_LITERAL;
             }
 
             consumeNextChar(lexer);
@@ -1615,8 +1603,8 @@
             return FALSE;
         }
 
-        SPL_TokenType token_type = getAcceptedKeyword(lexer);
-        if (token_type != SPL_TOKEN_ILLEGAL_TOKEN) {
+        CJ_TokenType token_type = getAcceptedKeyword(lexer);
+        if (token_type != CJ_TOKEN_ILLEGAL_TOKEN) {
             addToken(lexer, token_type);
             return TRUE;
         }
@@ -1625,8 +1613,8 @@
     }
 
     internal Boolean consumeSyntax(Lexer* lexer) {
-        SPL_TokenType type = getAcceptedSyntax(lexer);
-        if (type != SPL_TOKEN_ILLEGAL_TOKEN) {
+        CJ_TokenType type = getAcceptedSyntax(lexer);
+        if (type != CJ_TOKEN_ILLEGAL_TOKEN) {
             addToken(lexer, type);
             return TRUE;
         }
@@ -1647,7 +1635,7 @@
         }
     }
 
-    internal SPL_Token* lexerGenerateTokenStream(Lexer* lexer, char* file_data, u64 file_size) {
+    internal CJ_Token* lexerGenerateTokenStream(Lexer* lexer, char* file_data, u64 file_size) {
         lexer->source = file_data;
         lexer->source_size = file_size;
 
@@ -1655,12 +1643,21 @@
             lexer_consumeNextToken(lexer);
         }
 
-        cj_vector_push(lexer->tokens, tokenCreate(SPL_TOKEN_EOF, "", lexer->line));
+        cj_vector_push(lexer->tokens, tokenCreate(CJ_TOKEN_EOF, "", lexer->line));
         return lexer->tokens;
     }
 #endif
 
 #if defined(CJ_IMPL_PARSING)
+    typedef struct Parser {
+        CJ_Token* tokens;
+        CJ_Token tok;
+        u64 current;
+        CJ_Arena* arena_allocator;
+    } Parser;
+
+    Parser parserCreate();
+
     Parser parserCreate() {
         Parser ret;
         ret.tokens = NULLPTR;
@@ -1679,7 +1676,7 @@
         parser->current += 1;
     }
 
-    internal SPL_Token parser_peekNthToken(Parser* parser, int n) {
+    internal CJ_Token parser_peekNthToken(Parser* parser, int n) {
         return parser->tokens[parser->current + n];
     }
 
@@ -1689,14 +1686,14 @@
         cj_assert(FALSE);
     }
 
-    UNUSED_FUNCTION internal void expect(Parser* parser, SPL_TokenType expected_type) {
+    UNUSED_FUNCTION internal void expect(Parser* parser, CJ_TokenType expected_type) {
         if (parser_peekNthToken(parser, 0).type != expected_type) {
             printf("Expected: %s | Got: %s", tokenTypeToString(expected_type), parser_peekNthToken(parser, 0).lexeme);
             parser_reportError(parser, "\n");
         }
     }
 
-    UNUSED_FUNCTION internal Boolean parser_consumeOnMatch(Parser* parser, SPL_TokenType expected_type) {
+    UNUSED_FUNCTION internal Boolean parser_consumeOnMatch(Parser* parser, CJ_TokenType expected_type) {
         if (parser_peekNthToken(parser, 0).type == expected_type) {
             parser_consumeNextToken(parser);
             return TRUE;
@@ -1705,7 +1702,7 @@
         return FALSE;
     }
 
-    UNUSED_FUNCTION internal SPL_Token previousToken(Parser* parser) {
+    UNUSED_FUNCTION internal CJ_Token previousToken(Parser* parser) {
         return parser->tokens[parser->current - 1];
     }
 
@@ -1728,43 +1725,43 @@
         parser_consumeNextToken(parser);
 
         switch (parser->tok.type) {
-            case SPL_TOKEN_TRUE: {
+            case CJ_TOKEN_TRUE: {
                 return JSON_BOOL(arena, TRUE);
             }
 
-            case SPL_TOKEN_FALSE: {
+            case CJ_TOKEN_FALSE: {
                 return JSON_BOOL(arena, FALSE);
             }
 
-            case SPL_TOKEN_MINUS: {
+            case CJ_TOKEN_MINUS: {
                 parser_consumeNextToken(parser);
-                if (parser->tok.type == SPL_TOKEN_INTEGER_LITERAL) {
+                if (parser->tok.type == CJ_TOKEN_INTEGER_LITERAL) {
                     return JSON_INT(arena, atoi(parser->tok.lexeme));
-                } else if (parser->tok.type == SPL_TOKEN_FLOAT_LITERAL) {
+                } else if (parser->tok.type == CJ_TOKEN_FLOAT_LITERAL) {
                     return JSON_FLOAT(arena, atof(parser->tok.lexeme));
                 }
             }
 
-            case SPL_TOKEN_INTEGER_LITERAL: {
+            case CJ_TOKEN_INTEGER_LITERAL: {
                 return JSON_INT(arena, atoi(parser->tok.lexeme));
             }
 
-            case SPL_TOKEN_FLOAT_LITERAL: {
+            case CJ_TOKEN_FLOAT_LITERAL: {
                 return JSON_FLOAT(arena, atof(parser->tok.lexeme));
             }
 
-            case SPL_TOKEN_STRING_LITERAL: {
+            case CJ_TOKEN_STRING_LITERAL: {
                 char* str_in_between_quotes = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
                 return JSON_STRING(arena, str_in_between_quotes);
             }
 
-            case SPL_TOKEN_NULL: {
+            case CJ_TOKEN_NULL: {
                 return JSON_NULL(arena);
             }
 
-            case SPL_TOKEN_LEFT_BRACKET: { // Parse array
+            case CJ_TOKEN_LEFT_BRACKET: { // Parse array
                 JSON* array = cj_array_create(arena);
-                while (!parser_consumeOnMatch(parser, SPL_TOKEN_RIGHT_BRACKET)) {
+                while (!parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_BRACKET)) {
                     JSON* element = parseJSON(parser, arena);
                     if (!element) {
                         cj_assert(FALSE); // Invalid JSON array element
@@ -1773,7 +1770,7 @@
 
                     cj_vector_push(array->cj_array.jsonVector, element);
 
-                    if (!parser_consumeOnMatch(parser, SPL_TOKEN_COMMA)) {
+                    if (!parser_consumeOnMatch(parser, CJ_TOKEN_COMMA)) {
                         break; // End of array
                     }
                 }
@@ -1781,18 +1778,18 @@
                 return array;
             }
 
-            case SPL_TOKEN_LEFT_CURLY: { // Parse object
+            case CJ_TOKEN_LEFT_CURLY: { // Parse object
                 JSON* jsonObject = cj_create(arena);
 
-                while (!parser_consumeOnMatch(parser, SPL_TOKEN_RIGHT_CURLY)) {
-                    if (!parser_consumeOnMatch(parser, SPL_TOKEN_STRING_LITERAL)) {
+                while (!parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_CURLY)) {
+                    if (!parser_consumeOnMatch(parser, CJ_TOKEN_STRING_LITERAL)) {
                         cj_assert(FALSE); // Expected key
                         return NULLPTR;
                     }
 
                     char* key = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
 
-                    if (!parser_consumeOnMatch(parser, SPL_TOKEN_COLON)) {
+                    if (!parser_consumeOnMatch(parser, CJ_TOKEN_COLON)) {
                         cj_assert(FALSE); // Expected colon
                         return NULLPTR;
                     }
@@ -1809,7 +1806,7 @@
 
                     cj_vector_push(jsonObject->cj_json.key_value_pair_vector, pair);
 
-                    if (!parser_consumeOnMatch(parser, SPL_TOKEN_COMMA)) {
+                    if (!parser_consumeOnMatch(parser, CJ_TOKEN_COMMA)) {
                         break; // End of object
                     }
                 }
@@ -1826,7 +1823,7 @@
 
     JSON* parse_json_buffer(CJ_Arena* arena, char* json_buffer) {
         Lexer lexer = lexerCreate();
-        SPL_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
+        CJ_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
 
         Parser parser = parserCreate();
         parser.current = 0;

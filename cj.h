@@ -1345,7 +1345,7 @@
         u64 line;
     } CJ_Token;
 
-    const char* tokenTypeToString(CJ_TokenType type);
+    const char* cj_tokenTypeToString(CJ_TokenType type);
 
     internal const char* lookup_table[CJ_TOKEN_COUNT] = {
         stringify(CJ_TOKEN_ILLEGAL_TOKEN),
@@ -1368,11 +1368,11 @@
         stringify(CJ_TOKEN_NULL),
     };
 
-    const char* tokenTypeToString(CJ_TokenType type) {
+    const char* cj_tokenTypeToString(CJ_TokenType type) {
         return lookup_table[type];
     }
 
-    const CJ_Token tokenCreate(CJ_TokenType type, char* lexeme, u64 line) {
+    const CJ_Token cj_tokenCreate(CJ_TokenType type, char* lexeme, u64 line) {
         CJ_Token ret = {0};
         ret.lexeme = lexeme;
         ret.type = type;
@@ -1383,7 +1383,7 @@
 #endif
 
 #if defined (CJ_IMPL_LEXER)
-    typedef struct Lexer {
+    typedef struct CJ_Lexer {
         u64 left_pos;
         u64 right_pos;
         u64 line;
@@ -1393,14 +1393,14 @@
         u64 source_size;
 
         CJ_Token* tokens;
-    } Lexer;
+    } CJ_Lexer;
 
     internal Boolean isWhitespace(char c) {
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
 
-    internal Lexer lexerCreate() {
-        Lexer lexer = {0};
+    internal CJ_Lexer lexerCreate() {
+        CJ_Lexer lexer = {0};
 
         lexer.left_pos  = 0;
         lexer.right_pos = 0;
@@ -1412,7 +1412,7 @@
         return lexer;
     }
 
-    UNUSED_FUNCTION internal void lexerReset(Lexer* lexer) {
+    UNUSED_FUNCTION internal void lexerReset(CJ_Lexer* lexer) {
         lexer->left_pos  = 0;
         lexer->right_pos = 0;
         lexer->line      = 1;
@@ -1421,11 +1421,11 @@
         lexer->source_size = 0;
     }
 
-    internal char* getScratchBuffer(Lexer* lexer) {
+    internal char* getScratchBuffer(CJ_Lexer* lexer) {
         return cj_substring(lexer->source, lexer->left_pos, lexer->right_pos - 1);
     }
 
-    internal CJ_TokenType getAcceptedSyntax(Lexer* lexer) {
+    internal CJ_TokenType getAcceptedSyntax(CJ_Lexer* lexer) {
         internal char syntaxLookup[] = { 
             '(', ')', ',', '-',
             '[', ']', '{', '}', ':'
@@ -1448,7 +1448,7 @@
         return CJ_TOKEN_ILLEGAL_TOKEN;
     }
 
-    internal CJ_TokenType getAcceptedKeyword(Lexer* lexer) {
+    internal CJ_TokenType getAcceptedKeyword(CJ_Lexer* lexer) {
         internal CJ_TokenType keywordTokenTable[] = {
             CJ_TOKEN_TRUE, CJ_TOKEN_FALSE, CJ_TOKEN_NULL,
         };
@@ -1467,11 +1467,11 @@
         return CJ_TOKEN_ILLEGAL_TOKEN;
     }
 
-    internal Boolean isEOF(Lexer* lexer) {
+    internal Boolean isEOF(CJ_Lexer* lexer) {
         return lexer->right_pos >= lexer->source_size;
     }
 
-    internal char peekNthChar(Lexer* lexer, u8 n) {
+    internal char peekNthChar(CJ_Lexer* lexer, u8 n) {
         if ((lexer->right_pos + n) >= lexer->source_size) {
             return '\0';
         }
@@ -1479,12 +1479,12 @@
         return lexer->source[lexer->right_pos + n];
     }
 
-    internal void consumeNextChar(Lexer* lexer) {
+    internal void consumeNextChar(CJ_Lexer* lexer) {
         lexer->c = lexer->source[lexer->right_pos];
         lexer->right_pos += 1;
     }
 
-    internal Boolean lexer_consumeOnMatch(Lexer* lexer, char expected) {
+    internal Boolean lexer_consumeOnMatch(CJ_Lexer* lexer, char expected) {
         if (peekNthChar(lexer, 0) != expected) {
             return FALSE;
         }
@@ -1493,11 +1493,11 @@
         return TRUE;
     }
 
-    internal void addToken(Lexer* lexer, CJ_TokenType type) {
-        cj_vector_push(lexer->tokens, tokenCreate(type, getScratchBuffer(lexer), lexer->line));
+    internal void addToken(CJ_Lexer* lexer, CJ_TokenType type) {
+        cj_vector_push(lexer->tokens, cj_tokenCreate(type, getScratchBuffer(lexer), lexer->line));
     }
 
-    internal Boolean consumeWhitespace(Lexer* lexer) {
+    internal Boolean consumeWhitespace(CJ_Lexer* lexer) {
         if (!isWhitespace(lexer->c)) {
             return FALSE;
         }
@@ -1509,13 +1509,13 @@
         return TRUE;
     }
 
-    internal void lexer_reportError(Lexer* lexer, char* msg) {
+    internal void lexer_reportError(CJ_Lexer* lexer, char* msg) {
         printf("Lexical Error: %s | Line: %llu\n", getScratchBuffer(lexer), lexer->line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
     }
 
-    internal Boolean tryConsumeWord(Lexer* lexer) {
+    internal Boolean tryConsumeWord(CJ_Lexer* lexer) {
         if (!isalpha(lexer->c)) {
         return FALSE;
         }
@@ -1532,7 +1532,7 @@
         return TRUE;
     }
 
-    internal void tryConsumeStringLiteral(Lexer* lexer) {
+    internal void tryConsumeStringLiteral(CJ_Lexer* lexer) {
         while (peekNthChar(lexer, 0) != '\"') {
             if (isEOF(lexer)) {
                 lexer_reportError(lexer, "String literal doesn't have a closing double quote!");
@@ -1546,7 +1546,7 @@
     }
 
 
-    internal void tryConsumeCharacterLiteral(Lexer* lexer) {
+    internal void tryConsumeCharacterLiteral(CJ_Lexer* lexer) {
         if (lexer_consumeOnMatch(lexer, '\'')) {
             lexer_reportError(lexer, "character literal doesn't have any ascii data in between");
         }
@@ -1564,7 +1564,7 @@
     }
 
 
-    internal void tryConsumeDigitLiteral(Lexer* lexer) {
+    internal void tryConsumeDigitLiteral(CJ_Lexer* lexer) {
         CJ_TokenType kind = CJ_TOKEN_INTEGER_LITERAL;
 
         if (lexer->c == '-') {
@@ -1583,7 +1583,7 @@
     }
 
 
-    internal Boolean consumeLiteral(Lexer* lexer) {
+    internal Boolean consumeLiteral(CJ_Lexer* lexer) {
         if (isdigit(lexer->c) || (lexer->c == '-' && isdigit(peekNthChar(lexer, 0)))) {
             tryConsumeDigitLiteral(lexer);
             return TRUE;
@@ -1598,7 +1598,7 @@
         }
     }
 
-    internal Boolean consumeKeyword(Lexer* lexer) {
+    internal Boolean consumeKeyword(CJ_Lexer* lexer) {
         if (!tryConsumeWord(lexer)) {
             return FALSE;
         }
@@ -1612,7 +1612,7 @@
         return FALSE;
     }
 
-    internal Boolean consumeSyntax(Lexer* lexer) {
+    internal Boolean consumeSyntax(CJ_Lexer* lexer) {
         CJ_TokenType type = getAcceptedSyntax(lexer);
         if (type != CJ_TOKEN_ILLEGAL_TOKEN) {
             addToken(lexer, type);
@@ -1622,7 +1622,7 @@
         return FALSE;
     }
 
-    internal void lexer_consumeNextToken(Lexer* lexer) {
+    internal void lexer_consumeNextToken(CJ_Lexer* lexer) {
         lexer->left_pos = lexer->right_pos;
         consumeNextChar(lexer);
 
@@ -1635,7 +1635,7 @@
         }
     }
 
-    internal CJ_Token* lexerGenerateTokenStream(Lexer* lexer, char* file_data, u64 file_size) {
+    internal CJ_Token* lexerGenerateTokenStream(CJ_Lexer* lexer, char* file_data, u64 file_size) {
         lexer->source = file_data;
         lexer->source_size = file_size;
 
@@ -1643,23 +1643,23 @@
             lexer_consumeNextToken(lexer);
         }
 
-        cj_vector_push(lexer->tokens, tokenCreate(CJ_TOKEN_EOF, "", lexer->line));
+        cj_vector_push(lexer->tokens, cj_tokenCreate(CJ_TOKEN_EOF, "", lexer->line));
         return lexer->tokens;
     }
 #endif
 
 #if defined(CJ_IMPL_PARSING)
-    typedef struct Parser {
+    typedef struct CJ_Parser {
         CJ_Token* tokens;
         CJ_Token tok;
         u64 current;
         CJ_Arena* arena_allocator;
-    } Parser;
+    } CJ_Parser;
 
-    Parser parserCreate();
+    CJ_Parser cj_parserCreate();
 
-    Parser parserCreate() {
-        Parser ret;
+    CJ_Parser cj_parserCreate() {
+        CJ_Parser ret;
         ret.tokens = NULLPTR;
         ret.current = 0;
         ret.arena_allocator = cj_arena_create(KiloBytes(2));
@@ -1667,33 +1667,33 @@
         return ret;
     }
 
-    void parserFree(Parser* parser) {
+    void parserFree(CJ_Parser* parser) {
         cj_arena_free(parser->arena_allocator);
     }
 
-    internal void parser_consumeNextToken(Parser* parser) {
+    internal void parser_consumeNextToken(CJ_Parser* parser) {
         parser->tok = parser->tokens[parser->current];
         parser->current += 1;
     }
 
-    internal CJ_Token parser_peekNthToken(Parser* parser, int n) {
+    internal CJ_Token parser_peekNthToken(CJ_Parser* parser, int n) {
         return parser->tokens[parser->current + n];
     }
 
-    internal void parser_reportError(Parser* parser, char* msg) {
-        printf("Parser Error: %s | Line: %llu\n", parser_peekNthToken(parser, 0).lexeme, parser_peekNthToken(parser, 0).line);
+    internal void parser_reportError(CJ_Parser* parser, char* msg) {
+        printf("CJ_Parser Error: %s | Line: %llu\n", parser_peekNthToken(parser, 0).lexeme, parser_peekNthToken(parser, 0).line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
     }
 
-    UNUSED_FUNCTION internal void expect(Parser* parser, CJ_TokenType expected_type) {
+    UNUSED_FUNCTION internal void expect(CJ_Parser* parser, CJ_TokenType expected_type) {
         if (parser_peekNthToken(parser, 0).type != expected_type) {
-            printf("Expected: %s | Got: %s", tokenTypeToString(expected_type), parser_peekNthToken(parser, 0).lexeme);
+            printf("Expected: %s | Got: %s", cj_tokenTypeToString(expected_type), parser_peekNthToken(parser, 0).lexeme);
             parser_reportError(parser, "\n");
         }
     }
 
-    UNUSED_FUNCTION internal Boolean parser_consumeOnMatch(Parser* parser, CJ_TokenType expected_type) {
+    UNUSED_FUNCTION internal Boolean parser_consumeOnMatch(CJ_Parser* parser, CJ_TokenType expected_type) {
         if (parser_peekNthToken(parser, 0).type == expected_type) {
             parser_consumeNextToken(parser);
             return TRUE;
@@ -1702,7 +1702,7 @@
         return FALSE;
     }
 
-    UNUSED_FUNCTION internal CJ_Token previousToken(Parser* parser) {
+    UNUSED_FUNCTION internal CJ_Token previousToken(CJ_Parser* parser) {
         return parser->tokens[parser->current - 1];
     }
 
@@ -1717,7 +1717,7 @@
     // if you have a [] append JSON_Array
     // if you have ""
 
-    internal JSON* parseJSON(Parser* parser, CJ_Arena* arena) {
+    internal JSON* parseJSON(CJ_Parser* parser, CJ_Arena* arena) {
         if (parser->current >= cj_vector_count(parser->tokens)) {
             return NULLPTR; // End of tokens
         }
@@ -1822,10 +1822,10 @@
     }
 
     JSON* cj_parse(CJ_Arena* arena, char* json_buffer) {
-        Lexer lexer = lexerCreate();
+        CJ_Lexer lexer = lexerCreate();
         CJ_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
 
-        Parser parser = parserCreate();
+        CJ_Parser parser = cj_parserCreate();
         parser.current = 0;
         parser.tokens = token_stream;
 

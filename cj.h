@@ -1266,7 +1266,7 @@
             case CJ_TYPE_FLOAT: {
                 int precision = calculate_precision(root->cj_float);
                 printf("PRECISION: %d\n", precision);
-                return cj_sprint(arena, NULLPTR, "%.*f\n", precision, root->cj_float);
+                return cj_sprint(arena, NULLPTR, "%.*f", precision, root->cj_float);
             } break;
 
             case CJ_TYPE_STRING: {

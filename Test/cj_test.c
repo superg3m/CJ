@@ -29,8 +29,19 @@ int main() {
 
     char* str = json_to_string(root);
     printf("%s\n", str);
+    free(str);
 
-    ckg_free(str);
+    // u8* source_data = cj_os_read_entire_file(file_path, &file_size);
+
+    char* test_json = "{ \"test\": -5 }";
+    Lexer lexer = lexerCreate();
+    SPL_Token* token_stream = lexerGenerateTokenStream(&lexer, test_json, cj_cstr_length(test_json));
+
+    printf("------------ LEXICAL ANALYSIS ------------\n");
+    for (u64 i = 0; i < cj_vector_count(token_stream); i++ ) {
+        SPL_Token token = token_stream[i];
+        printf("%s(%s) | Line: %llu\n", tokenTypeToString(token.type), token.lexeme, token.line);
+    }
 
     return 0;
 }

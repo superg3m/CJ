@@ -10,7 +10,7 @@ compiler_treat_warnings_as_errors = True
 compiler_disable_warnings = False
 
 project_name = "CJ"
-project_dependencies = ["ckg"]
+project_dependencies = [""]
 project_rebuild_project_dependencies = False
 project_debug_with_visual_studio = False
 project_executable_procedures = ["cj_test.exe"]
@@ -22,7 +22,8 @@ elif compiler_name in ["gcc", "cc", "clang"]:
     compiler_warning_level = "all"
     compiler_disable_specific_warnings = ["deprecated", "parentheses"]
 
-libs = [f"../ckg/build_{compiler_name}/{C_BUILD_LIB("ckg", compiler_name)}"]
+# f"../ckg/build_{compiler_name}/{C_BUILD_LIB("ckg", compiler_name)}"
+libs = []
 if IS_WINDOWS():
 	windows_libs = ["User32.lib", "Gdi32.lib"] if compiler_name == "cl" else ["-lUser32", "-lGdi32"]
 	libs += windows_libs
@@ -37,7 +38,6 @@ procedures_config = {
         "compiler_inject_into_args": [],
         "include_paths": [
              "../",
-             "../ckg"
         ],
     },
 }

@@ -1081,16 +1081,19 @@
 
             case CJ_TYPE_ARRAY: {
                 depth += 1;
+                int num_json = (depth - 1) * cj_cstr_length(global_intend);
+                int num_key = depth * cj_cstr_length(global_intend);
+
                 int count = cj_vector_count(root->cj_json.key_value_pair_vector);
                 char** buffers = cj_arena_push_array(arena, char*, count);
-                u64 total_allocation_size = sizeof("[]") - 1;
+                u64 total_allocation_size = sizeof("[\n%s]") - 1;
                 for (int i = 0; i < count; i++) {
                     u64 allocation_size = 0;
                     char* value = json_to_string_helper(arena, root->cj_array.jsonVector[i], depth);
                     if (i == (count - 1)) {
-                        buffers[i] = cj_sprint(arena, &allocation_size, "%s", value);
+                        buffers[i] = cj_sprint(arena, &allocation_size, "\n%s%s", generateSpaces(num_key), value);
                     } else {
-                        buffers[i] = cj_sprint(arena, &allocation_size, "%s, ", value);
+                        buffers[i] = cj_sprint(arena, &allocation_size, "\n%s%s, ", generateSpaces(num_key), value);
                     }
 
                     total_allocation_size += allocation_size;
@@ -1102,7 +1105,8 @@
                 for (int i = 0; i < count; i++) {
                     cj_cstr_append(ret, total_allocation_size, buffers[i]);
                 }
-                cj_cstr_append(ret, total_allocation_size, "]");
+                cj_cstr_append(ret, total_allocation_size, "\n%s]");
+                ret = cj_sprint(arena, NULLPTR, ret, generateSpaces(num_json));
 
                 return ret;
             } break;
@@ -1504,19 +1508,23 @@
         return parser->tokens[parser->current - 1];
     }
 
-    UNUSED_FUNCTION internal JSON* parseJSON(Parser* parser) {
+    UNUSED_FUNCTION internal JSON* parseJSON(Parser* parser, SPL_Token* token_stream) {
+        parser->current = 0;
+        parser->tokens = token_stream;
+        parser->tok = parser->tokens[parser->current];
+
+
+
         return NULLPTR;
     }
 
     JSON* parse_json_buffer(char* json_buffer) {
-        // paresr = parserCreate();
+        Lexer lexer = lexerCreate();
+        SPL_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
 
-        // parser->current = 0;
-        // parser->tokens = tokens;
-        // parser->tok = parser->tokens[parser->current];
+        Parser parser = parserCreate();
+        JSON* ret = parseJSON(&parser, token_stream);
 
-        // JSON* json = parseJSON(parser);
-
-        return NULLPTR;
+        return ret;
     }
 #endif

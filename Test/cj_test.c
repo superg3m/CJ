@@ -18,14 +18,15 @@ int main() {
     cj_push(nested_twice, "ANdY", 84);
     cj_push(nested_twice, "Jovanni", 3.141598f);
     cj_push(nested_twice, "Hykes", (Boolean)FALSE);
+    cj_push(nested_twice, "Conrad", JSON_NULL(arena));
 
     cj_push(nested, "Names", nested_twice);
     cj_push(root, "address", nested);
 
     JSON* hobbies = cj_array_create(arena);
+    cj_array_push(hobbies, nested_twice);
     cj_array_push(hobbies, (Boolean)TRUE);
     cj_array_push(hobbies, "Coding");
-    cj_array_push(hobbies, JSON_NULL(arena));
     cj_push(root, "hobbies", hobbies);
 
     char* str = json_to_string(root);

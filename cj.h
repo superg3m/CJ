@@ -1437,5 +1437,14 @@
 #endif
 
 #if defined(CJ_IMPL_PARSING)
+    // if you have a { token append JSON
 
+    // if you have "": $value, | append key and make sure there is another one
+    // if you have "": $value  | append key
+
+    // if you have 5 append primary
+    // if you have true append bool
+    // if you have null append JSON_NULL()
+    // if you have a [] append JSON_Array
+    // if you have ""
 #endif

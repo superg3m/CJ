@@ -3,6 +3,10 @@ from c_build.source.Utilities import *
 from c_build.source.Manager import *
 # --------------------------------------------------------------------------------------
 compiler_name = C_BUILD_COMPILER_NAME() if C_BUILD_IS_DEPENDENCY() else "cl"
+
+if not IS_WINDOWS():
+    compiler_name = "gcc"
+
 compiler_std_version = "c11"
 compiler_warning_level = ""
 compiler_disable_specific_warnings = []
@@ -20,7 +24,7 @@ if compiler_name == "cl":
     compiler_disable_specific_warnings = ["5105", "4668", "4820", "4996"]
 elif compiler_name in ["gcc", "cc", "clang"]:
     compiler_warning_level = "all"
-    compiler_disable_specific_warnings = ["deprecated", "parentheses"]
+    compiler_disable_specific_warnings = ["deprecated", "parentheses", "unreachable-code-generic-assoc"]
 
 # f"../ckg/build_{compiler_name}/{C_BUILD_LIB("ckg", compiler_name)}"
 libs = []

@@ -40,6 +40,7 @@
     #include <stdio.h>
     #include <stdarg.h>
     #include <stdlib.h>
+    #include <ctype.h>
 
     typedef int8_t  s8;
     typedef int16_t s16;
@@ -222,7 +223,7 @@
     CJ_API u32 cj_cstr_length(const char* cstring);
     CJ_API void cj_cstr_append(char* string_buffer, size_t string_buffer_capacity, const char* to_append);
 	CJ_API void cj_cstr_append_char(char* string_buffer, size_t string_buffer_capacity, const char to_append);
-    char* cj_substring(const char* str, u64 start, u64 end);
+    char* cj_substring(char* str, u64 start, u64 end);
     Boolean cj_cstr_equal(const char* s1, const char* s2);
 #endif
 
@@ -367,7 +368,7 @@
         u64 line;
 
         u8 c;
-        u8* source;
+        char* source;
         u64 source_size;
 
         SPL_Token* tokens;
@@ -797,7 +798,7 @@
         str[str_length + 1] = to_append;
     }
 
-    char* cj_substring(const char* str, u64 start, u64 end) {
+    char* cj_substring(char* str, u64 start, u64 end) {
         cj_assert(str);
         u64 str_length = cj_cstr_length(str); 
         char* ret = cj_alloc((end - start) + 1);
@@ -996,7 +997,7 @@
         return ret;
     }
 
-    JSON* JSON_BOOL(CJ_Arena* arena,Boolean value) {
+    JSON* JSON_BOOL(CJ_Arena* arena, Boolean value) {
         JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_BOOL;
         ret->cj_bool = value;
@@ -1004,7 +1005,7 @@
         return ret;
     }
 
-    JSON* JSON_JSON(JSON* json) {
+    JSON* JSON_JSON(CJ_Arena* arena, JSON* json) {
         return json;
     }
 
@@ -1209,7 +1210,7 @@
         return lexer;
     }
 
-    internal void lexerReset(Lexer* lexer) {
+    UNUSED_FUNCTION internal void lexerReset(Lexer* lexer) {
         lexer->left_pos  = 0;
         lexer->right_pos = 0;
         lexer->line      = 1;
@@ -1276,24 +1277,18 @@
         return lexer->source[lexer->right_pos + n];
     }
 
-    internal consumeNextChar(Lexer* lexer) {
+    internal void consumeNextChar(Lexer* lexer) {
         lexer->c = lexer->source[lexer->right_pos];
         lexer->right_pos += 1;
     }
 
-    internal Boolean consumeOnMatch(Lexer* lexer, char expected) {
+    internal Boolean lexer_consumeOnMatch(Lexer* lexer, char expected) {
         if (peekNthChar(lexer, 0) != expected) {
             return FALSE;
         }
 
         consumeNextChar(lexer);
         return TRUE;
-    }
-
-    internal void consumeUntilNewLine(Lexer* lexer) {
-        while (!isEOF(lexer) && peekNthChar(lexer, 0) != '\r') {
-            consumeNextChar(lexer);
-        }
     }
 
     internal void addToken(Lexer* lexer, SPL_TokenType type) {
@@ -1312,7 +1307,7 @@
         return TRUE;
     }
 
-    internal void reportError(Lexer* lexer, char* msg) {
+    internal void lexer_reportError(Lexer* lexer, char* msg) {
         printf("Lexical Error: %s | Line: %llu\n", getScratchBuffer(lexer), lexer->line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
@@ -1338,7 +1333,7 @@
     internal void tryConsumeStringLiteral(Lexer* lexer) {
         while (peekNthChar(lexer, 0) != '\"') {
             if (isEOF(lexer)) {
-                reportError(lexer, "String literal doesn't have a closing double quote!");
+                lexer_reportError(lexer, "String literal doesn't have a closing double quote!");
             }
 
             consumeNextChar(lexer);
@@ -1350,14 +1345,13 @@
 
 
     internal void tryConsumeCharacterLiteral(Lexer* lexer) {
-        if (consumeOnMatch(lexer, '\'')) {
-            reportError(lexer, "character literal doesn't have any ascii data in between");
+        if (lexer_consumeOnMatch(lexer, '\'')) {
+            lexer_reportError(lexer, "character literal doesn't have any ascii data in between");
         }
-
 
         while (peekNthChar(lexer, 0) != '\'') {
             if (isEOF(lexer)) {
-                reportError(lexer, "character literal doesn't have a closing quote!");
+                lexer_reportError(lexer, "character literal doesn't have a closing quote!");
             }
 
             consumeNextChar(lexer);
@@ -1422,7 +1416,7 @@
         return FALSE;
     }
 
-    internal void consumeNextToken(Lexer* lexer) {
+    internal void lexer_consumeNextToken(Lexer* lexer) {
         lexer->left_pos = lexer->right_pos;
         consumeNextChar(lexer);
 
@@ -1431,7 +1425,7 @@
         else if (consumeKeyword(lexer)) {}
         else if (consumeSyntax(lexer)) {}
         else {
-            reportError(lexer, "Illegal token found");
+            lexer_reportError(lexer, "Illegal token found");
         }
     }
 
@@ -1440,7 +1434,7 @@
         lexer->source_size = file_size;
 
         while (!isEOF(lexer)) {
-            consumeNextToken(lexer);
+            lexer_consumeNextToken(lexer);
         }
 
         cj_vector_push(lexer->tokens, tokenCreate(SPL_TOKEN_EOF, "", lexer->line));
@@ -1466,62 +1460,63 @@
         Parser ret;
         ret.tokens = NULLPTR;
         ret.current = 0;
-        ret.tok;
-        ret.arena_allocator = ckit_arena_create(KiloBytes(2), "Parser Allocator");
+        ret.arena_allocator = cj_arena_create(KiloBytes(2));
 
         return ret;
     }
 
     void parserFree(Parser* parser) {
-        ckit_arena_free(parser->arena_allocator);
+        cj_arena_free(parser->arena_allocator);
     }
 
-    internal void consumeNextToken(Parser* parser) {
+    internal void parser_consumeNextToken(Parser* parser) {
         parser->tok = parser->tokens[parser->current];
         parser->current += 1;
     }
 
-    internal SPL_Token peekNthToken(Parser* parser, int n) {
+    internal SPL_Token parser_peekNthToken(Parser* parser, int n) {
         return parser->tokens[parser->current + n];
     }
 
-    internal void reportError(Parser* parser, char* msg) {
-        LOG_ERROR("Parser Error: %s | Line: %d\n", peekNthToken(parser, 0).lexeme, peekNthToken(parser, 0).line);
-        LOG_ERROR("Msg: %s\n", msg);
-        ckit_assert(FALSE);
+    internal void parser_reportError(Parser* parser, char* msg) {
+        printf("Parser Error: %s | Line: %llu\n", parser_peekNthToken(parser, 0).lexeme, parser_peekNthToken(parser, 0).line);
+        printf("Msg: %s\n", msg);
+        cj_assert(FALSE);
     }
 
-    internal void expect(Parser* parser, SPL_TokenType expected_type) {
-        if (peekNthToken(parser, 0).type != expected_type) {
-            LOG_ERROR("Expected: %s | Got: %s", tokenTypeToString(expected_type), peekNthToken(parser, 0).lexeme);
-            reportError(parser, "\n");
+    UNUSED_FUNCTION internal void expect(Parser* parser, SPL_TokenType expected_type) {
+        if (parser_peekNthToken(parser, 0).type != expected_type) {
+            printf("Expected: %s | Got: %s", tokenTypeToString(expected_type), parser_peekNthToken(parser, 0).lexeme);
+            parser_reportError(parser, "\n");
         }
     }
 
-    internal Boolean consumeOnMatch(Parser* parser, SPL_TokenType expected_type) {
-        if (peekNthToken(parser, 0).type == expected_type) {
-            consumeNextToken(parser);
+    UNUSED_FUNCTION internal Boolean parser_consumeOnMatch(Parser* parser, SPL_TokenType expected_type) {
+        if (parser_peekNthToken(parser, 0).type == expected_type) {
+            parser_consumeNextToken(parser);
             return TRUE;
         }
 
         return FALSE;
     }
 
-    internal SPL_Token previousToken(Parser* parser) {
+    UNUSED_FUNCTION internal SPL_Token previousToken(Parser* parser) {
         return parser->tokens[parser->current - 1];
     }
 
-    internal JSON* parseJSON(Parser* parser) {
-        return parseTerm(parser);
+    UNUSED_FUNCTION internal JSON* parseJSON(Parser* parser) {
+        return NULLPTR;
     }
 
-    JSON* parse_json_buffer(Parser* parser, SPL_Token* tokens) {
-        parser->current = 0;
-        parser->tokens = tokens;
-        parser->tok = parser->tokens[parser->current];
+    JSON* parse_json_buffer(char* json_buffer) {
+        // paresr = parserCreate();
 
-        JSON* json = parseJSON(parser);
+        // parser->current = 0;
+        // parser->tokens = tokens;
+        // parser->tok = parser->tokens[parser->current];
 
-        return json;
+        // JSON* json = parseJSON(parser);
+
+        return NULLPTR;
     }
 #endif

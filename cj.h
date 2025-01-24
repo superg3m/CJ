@@ -334,7 +334,7 @@
 #endif
 
 #if defined(CJ_INCLUDE_PARSING)
-    JSON* parse_json_buffer(CJ_Arena* arena, char* json_buffer);
+    JSON* cj_Parse(CJ_Arena* arena, char* json_buffer);
 #endif
 
 //
@@ -1821,7 +1821,7 @@
         }
     }
 
-    JSON* parse_json_buffer(CJ_Arena* arena, char* json_buffer) {
+    JSON* cj_Parse(CJ_Arena* arena, char* json_buffer) {
         Lexer lexer = lexerCreate();
         CJ_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
 

@@ -1745,9 +1745,7 @@
 
                     cj_vector_push(array->cj_array.jsonVector, element);
 
-                    if (!parser_consumeOnMatch(parser, CJ_TOKEN_COMMA)) {
-                        break; // End of array
-                    }
+                    parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
                 }
 
                 return array;

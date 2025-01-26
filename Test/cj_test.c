@@ -31,7 +31,6 @@ int main() {
 
     char* str = cj_to_string(root);
     printf("%s\n", str);
-    free(str);
 
     // u8* source_data = cj_os_read_entire_file(file_path, &file_size);
 
@@ -41,8 +40,11 @@ int main() {
     JSON* json_test_parse = cj_parse(arena, test_json);
     char* str2 = cj_to_string(json_test_parse);
     printf("%s\n", str2);
-    cj_arena_free(arena);
+
+
+    free(str);
     free(str2);
+    cj_arena_free(arena);
 
     return 0;
 }

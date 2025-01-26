@@ -114,8 +114,8 @@
     #define cj_assert(expression)                     \
     do {                                               \
         if (!(expression)) {                           \
-            char msg[] = "Func: %s, File: %s:%d\n";    \
-            printf(msg, __func__, __FILE__, __LINE__); \
+            char msg_art[] = "Func: %s, File: %s:%d\n";    \
+            printf(msg_art, __func__, __FILE__, __LINE__); \
             CRASH;                                     \
         }                                              \
     } while (FALSE)                                    \
@@ -123,8 +123,8 @@
     #define cj_assert_msg(expression, message, ...)	          \
     do {                                                          \
         if (!(expression)) {                                      \
-            char msg[] = "Func: %s, File: %s:%d\n";               \
-            printf(msg, __func__, __FILE__, __LINE__);            \
+            char msg_art[] = "Func: %s, File: %s:%d\n";               \
+            printf(msg_art, __func__, __FILE__, __LINE__);            \
             printf(message, ##__VA_ARGS__);                       \
             CRASH;                                                \
         }                                                         \
@@ -1145,6 +1145,7 @@
     }
 
     JSON* JSON_JSON(CJ_Arena* arena, JSON* json) {
+        (void)arena;
         return json;
     }
 

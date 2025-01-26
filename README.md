@@ -32,30 +32,28 @@ Here's an example program demonstrating how to use CJ to create, manipulate, and
 
 ```c
 #include <cj.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 int main() {
     char* indent = "    ";
-    cj_set_context_indent(indent); // Set indentation for JSON string formatting
+    cj_set_context_indent(indent);
 
-    CJ_Arena* arena = cj_arena_create(0); // Create an arena for memory management (i'm open to this changing tbh)
-    JSON* root = cj_create(arena); // Create a root JSON object
+    CJ_Arena* arena = cj_arena_create(0);
+    JSON* root = cj_create(arena);
     cj_push(root, "name", "Example");
     cj_push(root, "age", 25);
 
-    JSON* nested = cj_create(arena); // Create a nested JSON object
+    JSON* nested = cj_create(arena);
     cj_push(nested, "address1", "San Francisco");
     cj_push(nested, "address2", "California");
 
-    JSON* nested_twice = cj_create(arena); // Create a nested JSON object within another
+    JSON* nested_twice = cj_create(arena);
     cj_push(nested_twice, "KylE", (Boolean)TRUE);
     cj_push(nested_twice, "ANdY", 84);
     cj_push(nested_twice, "Jovanni", 3.141598);
     cj_push(nested_twice, "Hykes", (Boolean)FALSE);
     cj_push(nested_twice, "Conrad", JSON_NULL(arena));
 
-    cj_push(nested, "Names", nested_twice); // Add the nested object to the parent
+    cj_push(nested, "Names", nested_twice);
     cj_push(root, "address", nested);
 
     JSON* hobbies = cj_array_create(arena);
@@ -66,17 +64,21 @@ int main() {
 
     char* str = cj_to_string(root);
     printf("%s\n", str);
-    free(str);
 
-    char* test_json = "{\"BinaryOp\": {\"op\": \"+\", \"left\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"*\", \"left\": [null, false, 7, 23.51, true, { \"test\": null }], \"right\": 123}}}, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"/\", \"left\": 2, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"+\", \"left\": 45.234001, \"right\": 5}}}}}}}}";
+    // u8* source_data = cj_os_read_entire_file(file_path, &file_size);
+
+    char* test_json = "{\"BinaryOp\": {\"op\": \"+\", \"left\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"*\", \"left\": [null, false, 7, 23.51, true, { \"test\": \"should_be\" }], \"right\": 123}}}, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"/\", \"left\": 2, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"+\", \"left\": 45.234001, \"right\": 5}}}}}}}}";
 
     printf("------------ PARSING ------------\n");
-    JSON* json_test_parse = cj_parse(arena, test_json); // Parse the JSON string
+    JSON* json_test_parse = cj_parse(arena, test_json);
     char* str2 = cj_to_string(json_test_parse);
     printf("%s\n", str2);
-    free(str2);
 
+
+    free(str);
+    free(str2);
     cj_arena_free(arena);
+
     return 0;
 }
 ```

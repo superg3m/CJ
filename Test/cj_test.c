@@ -42,7 +42,7 @@ int main() {
     char* str2 = cj_to_string(json_test_parse);
     printf("%s\n", str2);
     cj_arena_free(arena);
-    free(str);
+    free(str2);
 
     return 0;
 }

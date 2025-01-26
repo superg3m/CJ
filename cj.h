@@ -1309,6 +1309,10 @@
     }
 
     char* cj_to_string(JSON* root) {
+        if (!root) {
+            return "CJ: (null)";
+        }
+
         CJ_Arena* temp_arena = cj_arena_create(KiloBytes(1));
         char* ret = cj_to_string_helper(temp_arena, root, 0);
         cj_arena_free(temp_arena);
@@ -1518,7 +1522,6 @@
         if (!isalpha(lexer->c)) {
         return FALSE;
         }
-    
 
         while (isalnum(peekNthChar(lexer, 0)) || peekNthChar(lexer, 0) == '_') {
             if (isEOF(lexer)) {
@@ -1705,11 +1708,11 @@
         switch (parser->tok.type) {
             case CJ_TOKEN_TRUE: {
                 return JSON_BOOL(arena, TRUE);
-            }
+            } break;
 
             case CJ_TOKEN_FALSE: {
                 return JSON_BOOL(arena, FALSE);
-            }
+            } break;
 
             case CJ_TOKEN_MINUS: {
                 parser_consumeNextToken(parser);
@@ -1718,31 +1721,30 @@
                 } else if (parser->tok.type == CJ_TOKEN_FLOAT_LITERAL) {
                     return JSON_FLOAT(arena, atof(parser->tok.lexeme));
                 }
-            }
-
+            } break;
+            
             case CJ_TOKEN_INTEGER_LITERAL: {
                 return JSON_INT(arena, atoi(parser->tok.lexeme));
-            }
+            } break;
 
             case CJ_TOKEN_FLOAT_LITERAL: {
                 return JSON_FLOAT(arena, atof(parser->tok.lexeme));
-            }
+            } break;
 
             case CJ_TOKEN_STRING_LITERAL: {
                 char* str_in_between_quotes = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
                 return JSON_STRING(arena, str_in_between_quotes);
-            }
+            } break;
 
             case CJ_TOKEN_NULL: {
                 return JSON_NULL(arena);
-            }
+            } break;
 
             case CJ_TOKEN_LEFT_BRACKET: { // Parse array
                 JSON* array = cj_array_create(arena);
                 while (!parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_BRACKET)) {
                     JSON* element = parseJSON(parser, arena);
                     if (!element) {
-                        cj_assert(FALSE); // Invalid JSON array element
                         return NULLPTR;
                     }
 
@@ -1752,27 +1754,24 @@
                 }
 
                 return array;
-            }
+            } break;
 
             case CJ_TOKEN_LEFT_CURLY: { // Parse object
                 JSON* jsonObject = cj_create(arena);
 
                 while (!parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_CURLY)) {
                     if (!parser_consumeOnMatch(parser, CJ_TOKEN_STRING_LITERAL)) {
-                        cj_assert(FALSE); // Expected key
                         return NULLPTR;
                     }
 
                     char* key = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
 
                     if (!parser_consumeOnMatch(parser, CJ_TOKEN_COLON)) {
-                        cj_assert(FALSE); // Expected colon
                         return NULLPTR;
                     }
 
                     JSON* value = parseJSON(parser, arena);
                     if (!value) {
-                        cj_assert(FALSE); // Invalid value
                         return NULLPTR;
                     }
 
@@ -1786,13 +1785,14 @@
                 }
 
                 return jsonObject;
-            }
+            } break;
 
             default: {
-                cj_assert(FALSE); // Unexpected token
-                return NULLPTR;
-            }
+                return NULLPTR; 
+            } break;
         }
+
+        return NULLPTR;
     }
 
     JSON* cj_parse(CJ_Arena* arena, char* json_buffer) {

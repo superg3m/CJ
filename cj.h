@@ -1,5 +1,8 @@
 #pragma once
 
+// #define CJ_IMPL 
+// for the implementation details
+
 #ifdef __cpluCJus
     #define CJ_API extern "C"
 #else 

@@ -11,9 +11,9 @@
 - Parses JSON strings into structured data.
 - Arena-based memory management for efficient and controlled allocations.
 
-## Cons
+## Cons (I hacked this together in 2 days so forgive my sins)
 - Not optimized at all
-- Likely has bugs
+- Likely has bugs, almost certainly has a memory leak of some kind...
 - Error handling is none-existant your program will likely crash on asserts if you give it malformed input.
 
 ## Getting Started
@@ -68,7 +68,6 @@ int main() {
     printf("%s\n", str);
     free(str);
 
-    // Parsing a JSON string
     char* test_json = "{\"BinaryOp\": {\"op\": \"+\", \"left\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"*\", \"left\": [null, false, 7, 23.51, true, { \"test\": null }], \"right\": 123}}}, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"/\", \"left\": 2, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"+\", \"left\": 45.234001, \"right\": 5}}}}}}}}";
 
     printf("------------ PARSING ------------\n");
@@ -77,7 +76,7 @@ int main() {
     printf("%s\n", str2);
     free(str2);
 
-    cj_arena_free(arena); // Free the arena
+    cj_arena_free(arena);
     return 0;
 }
 ```
@@ -163,6 +162,7 @@ int main() {
 - `void cj_array_push(JSON* array, ...)` - Adds a value to a JSON array.
 
 ### JSON parsing/printing
+- `char* cj_set_context_indent(char* indent)` - Sets the indent level you want
 - `char* cj_to_string(JSON* json)` - Converts a JSON object to a formatted string.
 - `JSON* cj_parse(CJ_Arena* arena, const char* json_str)` - Parses a JSON string into a JSON object.
 

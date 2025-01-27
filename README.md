@@ -178,3 +178,6 @@ CJ is open source and available under the [MIT License](LICENSE).
 ---
 
 ## --- Feel free to contribute, report issues, or suggest improvements! ---
+
+#### Notes for me:
+- Need to implement duplicate key checks should be trivial

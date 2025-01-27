@@ -753,7 +753,7 @@
         Boolean start_check = (start >= 0) && (start <= str_length - 1);
         Boolean end_check = (end >= 0) && (end <= str_length - 1);
 
-        cj_assert_msg(start_check, "cj_substring: Start range is outside expected range: [%d - %lu] got: %lu\n", 0, str_length - 1, start);
+        cj_assert_msg(start_check, "cj_substring: Start range is outside expected range: [%d - %llu] got: %lu\n", 0, str_length - 1, start);
         cj_assert_msg(end_check, "cj_substring: End range is outside expected range: [%d - %lu] got: %ld\n", 0, str_length - 1, end);
         cj_assert_msg(start <= end, "cj_substring: Start range is greater than end range[start: %lu > end: %lu]\n", start, end);
 

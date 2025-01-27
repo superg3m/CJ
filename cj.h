@@ -1247,6 +1247,7 @@
                 u64 total_allocation_size = sizeof("[\n%s]") - 1;
                 for (int i = 0; i < count; i++) {
                     u64 allocation_size = 0;
+                    JSON* new_root = root->cj_array.jsonVector[i];
                     char* value = cj_to_string_helper(arena, root->cj_array.jsonVector[i], depth);
                     if (i == (count - 1)) {
                         buffers[i] = cj_sprint(arena, &allocation_size, "\n%s%s", generateSpaces(arena, num_key), value);
@@ -1255,6 +1256,9 @@
                     }
 
                     total_allocation_size += allocation_size;
+                    if (new_root->type == CJ_TYPE_JSON) {
+                        cj_free(value);
+                    }
                 }
 
                 char* ret = MACRO_cj_arena_push(arena, total_allocation_size);
@@ -1281,15 +1285,20 @@
                 u64 total_allocation_size = sizeof("{\n\n%s}") - 1;
                 for (int i = 0; i < count; i++) {
                     u64 allocation_size = 0;
+                    JSON* new_root = root->cj_json.key_value_pair_vector[i].value;
                     char *key = root->cj_json.key_value_pair_vector[i].key;
-                    char *value = cj_to_string_helper(arena, root->cj_json.key_value_pair_vector[i].value, depth);
+                    char *value = cj_to_string_helper(arena, new_root, depth);
 
                     if (i == (count - 1)) {
                         buffers[i] = cj_sprint(arena, &allocation_size, "%s\"%s\": %s", generateSpaces(arena, num_key), key, value); 
                     } else {
                         buffers[i] = cj_sprint(arena, &allocation_size, "%s\"%s\": %s,\n", generateSpaces(arena, num_key), key, value);  
                     }
+
                     total_allocation_size += allocation_size;
+                    if (new_root->type == CJ_TYPE_JSON) {
+                        cj_free(value);
+                    }
                 }
 
                 char* ret = MACRO_cj_arena_push(arena, total_allocation_size);
@@ -1311,7 +1320,11 @@
 
     char* cj_to_string(JSON* root) {
         if (!root) {
-            return "CJ: (null)";
+            #define ERR_STR "CJ: (JSON* root = null)"
+            u64 allocation_size = sizeof(ERR_STR);
+            char* ret = cj_alloc(allocation_size);
+            cj_cstr_append(ret, allocation_size, ERR_STR);
+            return ret;
         }
 
         CJ_Arena* temp_arena = cj_arena_create(KiloBytes(1));

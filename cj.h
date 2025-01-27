@@ -1781,10 +1781,7 @@
                     }
 
                     char* key = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
-                    if (cj_cstr_length(key) == 0) {
-                        return NULLPTR;
-                    }
-
+                    
                     if (!parser_consumeOnMatch(parser, CJ_TOKEN_COLON)) {
                         return NULLPTR;
                     }

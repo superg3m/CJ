@@ -1181,7 +1181,7 @@
         va_list args_copy;
         va_start(args, fmt);
 
-        va_copy(args, args_copy);
+        va_copy(args_copy, args);
         ret_alloc = vsnprintf(NULLPTR, 0, fmt, args_copy) + 1;
         char* ret = NULLPTR;
         if (arena != NULLPTR) {

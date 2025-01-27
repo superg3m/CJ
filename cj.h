@@ -51,7 +51,7 @@
     typedef uint8_t  u8;
     typedef uint16_t u16;
     typedef uint32_t u32;
-    typedef uint64_t u64;
+    typedef unsigned long long u64;
 
     typedef u8 Boolean;
 
@@ -753,9 +753,9 @@
         Boolean start_check = (start >= 0) && (start <= str_length - 1);
         Boolean end_check = (end >= 0) && (end <= str_length - 1);
 
-        cj_assert_msg(start_check, "cj_substring: Start range is outside expected range: [%d - %llu] got: %lu\n", 0, str_length - 1, start);
-        cj_assert_msg(end_check, "cj_substring: End range is outside expected range: [%d - %lu] got: %ld\n", 0, str_length - 1, end);
-        cj_assert_msg(start <= end, "cj_substring: Start range is greater than end range[start: %lu > end: %lu]\n", start, end);
+        cj_assert_msg(start_check, "cj_substring: Start range is outside expected range: [%d - %llu] got: %llu\n", 0, str_length - 1, start);
+        cj_assert_msg(end_check, "cj_substring: End range is outside expected range: [%d - %llu] got: %llu\n", 0, str_length - 1, end);
+        cj_assert_msg(start <= end, "cj_substring: Start range is greater than end range[start: %llu > end: %llu]\n", start, end);
 
         //char* str = "hello"
         //0 - 4 = hello\0 = 6
@@ -1178,15 +1178,18 @@
     char* cj_sprint(CJ_Arena* arena, u64* allocation_size, char* fmt, ...) {
         u64 ret_alloc = 0; 
         va_list args;
-
+        va_list args_copy;
         va_start(args, fmt);
-        ret_alloc = vsnprintf(NULLPTR, 0, fmt, args) + 1;
+
+        va_copy(args, args_copy);
+        ret_alloc = vsnprintf(NULLPTR, 0, fmt, args_copy) + 1;
         char* ret = NULLPTR;
         if (arena != NULLPTR) {
             ret = MACRO_cj_arena_push(arena, ret_alloc);
         } else {
             ret = cj_alloc(ret_alloc);
         }
+        va_end(args_copy);
 
         vsnprintf(ret, ret_alloc, fmt, args);
         va_end(args);
@@ -1521,7 +1524,7 @@
     }
 
     internal void lexer_reportError(CJ_Lexer* lexer, char* msg) {
-        printf("Lexical Error: %s | Line: %lu\n", getScratchBuffer(lexer), lexer->line);
+        printf("Lexical Error: %s | Line: %llu\n", getScratchBuffer(lexer), lexer->line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
     }
@@ -1670,7 +1673,7 @@
     }
 
     internal void parser_reportError(CJ_Parser* parser, char* msg) {
-        printf("CJ_Parser Error: %s | Line: %lu\n", parser_peekNthToken(parser, 0).lexeme, parser_peekNthToken(parser, 0).line);
+        printf("CJ_Parser Error: %s | Line: %llu\n", parser_peekNthToken(parser, 0).lexeme, parser_peekNthToken(parser, 0).line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
     }

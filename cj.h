@@ -753,9 +753,9 @@
         Boolean start_check = (start >= 0) && (start <= str_length - 1);
         Boolean end_check = (end >= 0) && (end <= str_length - 1);
 
-        cj_assert_msg(start_check, "cj_substring: Start range is outside expected range: [%d - %llu] got: %llu\n", 0, str_length - 1, start);
-        cj_assert_msg(end_check, "cj_substring: End range is outside expected range: [%d - %llu] got: %lld\n", 0, str_length - 1, end);
-        cj_assert_msg(start <= end, "cj_substring: Start range is greater than end range[start: %llu > end: %llu]\n", start, end);
+        cj_assert_msg(start_check, "cj_substring: Start range is outside expected range: [%d - %lu] got: %lu\n", 0, str_length - 1, start);
+        cj_assert_msg(end_check, "cj_substring: End range is outside expected range: [%d - %lu] got: %ld\n", 0, str_length - 1, end);
+        cj_assert_msg(start <= end, "cj_substring: Start range is greater than end range[start: %lu > end: %lu]\n", start, end);
 
         //char* str = "hello"
         //0 - 4 = hello\0 = 6
@@ -1504,15 +1504,6 @@
         lexer->right_pos += 1;
     }
 
-    internal Boolean lexer_consumeOnMatch(CJ_Lexer* lexer, char expected) {
-        if (peekNthChar(lexer, 0) != expected) {
-            return FALSE;
-        }
-
-        consumeNextChar(lexer);
-        return TRUE;
-    }
-
     internal void addToken(CJ_Lexer* lexer, CJ_TokenType type) {
         cj_vector_push(lexer->tokens, cj_tokenCreate(type, getScratchBuffer(lexer), lexer->line));
     }
@@ -1530,7 +1521,7 @@
     }
 
     internal void lexer_reportError(CJ_Lexer* lexer, char* msg) {
-        printf("Lexical Error: %s | Line: %llu\n", getScratchBuffer(lexer), lexer->line);
+        printf("Lexical Error: %s | Line: %lu\n", getScratchBuffer(lexer), lexer->line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
     }
@@ -1679,7 +1670,7 @@
     }
 
     internal void parser_reportError(CJ_Parser* parser, char* msg) {
-        printf("CJ_Parser Error: %s | Line: %llu\n", parser_peekNthToken(parser, 0).lexeme, parser_peekNthToken(parser, 0).line);
+        printf("CJ_Parser Error: %s | Line: %lu\n", parser_peekNthToken(parser, 0).lexeme, parser_peekNthToken(parser, 0).line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
     }

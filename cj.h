@@ -163,7 +163,7 @@
 
     #define VECTOR_DEFAULT_CAPACITY 1
     #define cj_vector_header_base(vector) ((CJ_VectorHeader*)(((u8*)vector) - sizeof(CJ_VectorHeader)))
-    #define cj_vector_count(vector) (*cj_vector_header_base(vector)).count
+    #define cj_vector_count(vector) (vector ? (*cj_vector_header_base(vector)).count : 0)
     #define cj_vector_capacity(vector) (*cj_vector_header_base(vector)).capacity
 
     #ifdef __cpluCJus
@@ -946,10 +946,12 @@
         char* ret = cj_alloc(allocation_size); // techinally allocating more than I need here
 
         if (start_delimitor_index == -1 || end_delimitor_index == -1) {
+            cj_free(ret);
             return NULLPTR;
         }
 
         if (start_delimitor_index > end_delimitor_index) {
+            cj_free(ret);
             return NULLPTR; // The start delimtor is after the end delimitor
         }
 
@@ -1244,7 +1246,7 @@
 
                 int count = cj_vector_count(root->cj_json.key_value_pair_vector);
                 char** buffers = cj_arena_push_array(arena, char*, count);
-                u64 total_allocation_size = sizeof("[\n%s]") - 1;
+                u64 total_allocation_size = sizeof("[\n%s]");
                 for (int i = 0; i < count; i++) {
                     u64 allocation_size = 0;
                     JSON* new_root = root->cj_array.jsonVector[i];
@@ -1282,7 +1284,7 @@
                 int count = cj_vector_count(root->cj_json.key_value_pair_vector);
 
                 char** buffers = cj_arena_push_array(arena, char*, count);
-                u64 total_allocation_size = sizeof("{\n\n%s}") - 1;
+                u64 total_allocation_size = sizeof("{\n\n%s}");
                 for (int i = 0; i < count; i++) {
                     u64 allocation_size = 0;
                     JSON* new_root = root->cj_json.key_value_pair_vector[i].value;
@@ -1779,6 +1781,9 @@
                     }
 
                     char* key = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
+                    if (cj_cstr_length(key) == 0) {
+                        return NULLPTR;
+                    }
 
                     if (!parser_consumeOnMatch(parser, CJ_TOKEN_COLON)) {
                         return NULLPTR;

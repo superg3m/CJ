@@ -34,7 +34,7 @@ int main() {
 
     // u8* source_data = cj_os_read_entire_file(file_path, &file_size);
 
-    char* test_json = "{\"BinaryOp\": {\"op\": \"+\", \"left\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"*\", \"left\": [null, false, 7, 23.51, true, { \"test\": \"should_be\" }], \"right\": 123}}}, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"/\", \"left\": 2, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"+\", \"left\": 45.234001, \"right\": 5}}}}}}}}";
+    char* test_json = "{\"BinaryOp\": {\"op\": \"+\", \"\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"*\", \"left\": [null, false, 7, 23.51, true, { \"test\": \"should_be\" }], \"right\": 123}}}, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"/\", \"left\": 2, \"right\": {\"Grouping\": {\"BinaryOp\": {\"op\": \"+\", \"left\": 45.234001, \"right\": 5}}}}}}}}";
 
     printf("------------ PARSING ------------\n");
     JSON* json_test_parse = cj_parse(arena, test_json);

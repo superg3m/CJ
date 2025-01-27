@@ -7,7 +7,7 @@ int main() {
     CJ_Arena* arena = cj_arena_create(0);
     JSON* root = cj_create(arena);
     cj_push(root, "name", "Example");
-    cj_push(root, "age", 25);
+    cj_push(root, "age", 25.0123);
 
     JSON* nested = cj_create(arena);
     cj_push(nested, "address1", "San Francisco");
@@ -16,7 +16,7 @@ int main() {
     JSON* nested_twice = cj_create(arena);
     cj_push(nested_twice, "KylE", (Boolean)TRUE);
     cj_push(nested_twice, "ANdY", 84);
-    cj_push(nested_twice, "Jovanni", 3.141598);
+    cj_push(nested_twice, "Jovanni", 3.0141598);
     cj_push(nested_twice, "Hykes", (Boolean)FALSE);
     cj_push(nested_twice, "Conrad", JSON_NULL(arena));
 

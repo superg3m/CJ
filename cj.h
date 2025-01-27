@@ -1202,17 +1202,18 @@
         char buffer[64];
         
         snprintf(buffer, sizeof(buffer), "%.15g", value);
-        char* decimal_point = strchr(buffer, '.');
-        if (!decimal_point) {
+        if (!cj_cstr_contains(buffer, ".")) {
             return 0;
         }
 
-        char* end = buffer + strlen(buffer) - 1;
-        while (*end == '0') {
+        char* end = buffer + (cj_cstr_length(buffer) - 1);
+        int precision_count = 0;
+        while (*end != '.') {
             end--;
+            precision_count++;
         }
 
-        return (int)(end - decimal_point);
+        return precision_count;
     }
 
     internal char* cj_to_string_helper(CJ_Arena* arena, JSON* root, int depth) {

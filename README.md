@@ -181,3 +181,17 @@ CJ is open source and available under the [MIT License](LICENSE).
 
 #### Notes for me:
 - Need to implement duplicate key checks should be trivial
+
+
+• ckit: https://github.com/superg3m/ckit
+ • Implementing everything from scratch to understand the minutia in the details.
+ • Mostly uses operating system (native) implementations instead of the C runtime.
+ • Solo developer about 10k+ lines of code so far
+ • Capable of drawing graphics with a software rendering backend
+ • Currently working on hardware acceleration with OpenGL/WGL rendering backend
+
+• c_build: https://github.com/superg3m/c_build
+ • Uses my fully custom Python build system
+
+• CJ: https://github.com/superg3m/CJ
+ • A Lightweight JSON Parser for C

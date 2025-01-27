@@ -1164,8 +1164,8 @@
         global_intend = new_indent;
     }
 
-    internal char* generateSpaces(int number_of_spaces) {
-        char* ret = cj_alloc((sizeof(char) * number_of_spaces) + 1);
+    internal char* generateSpaces(CJ_Arena* arena, int number_of_spaces) {
+        char* ret = MACRO_cj_arena_push(arena, (sizeof(char) * number_of_spaces) + 1);
         for (int i = 0; i < number_of_spaces; i++) {
             ret[i] = ' ';
         }
@@ -1249,9 +1249,9 @@
                     u64 allocation_size = 0;
                     char* value = cj_to_string_helper(arena, root->cj_array.jsonVector[i], depth);
                     if (i == (count - 1)) {
-                        buffers[i] = cj_sprint(arena, &allocation_size, "\n%s%s", generateSpaces(num_key), value);
+                        buffers[i] = cj_sprint(arena, &allocation_size, "\n%s%s", generateSpaces(arena, num_key), value);
                     } else {
-                        buffers[i] = cj_sprint(arena, &allocation_size, "\n%s%s, ", generateSpaces(num_key), value);
+                        buffers[i] = cj_sprint(arena, &allocation_size, "\n%s%s, ", generateSpaces(arena, num_key), value);
                     }
 
                     total_allocation_size += allocation_size;
@@ -1264,7 +1264,7 @@
                     cj_cstr_append(ret, total_allocation_size, buffers[i]);
                 }
                 cj_cstr_append(ret, total_allocation_size, "\n%s]");
-                ret = cj_sprint(arena, NULLPTR, ret, generateSpaces(num_json));
+                ret = cj_sprint(arena, NULLPTR, ret, generateSpaces(arena, num_json));
 
                 return ret;
             } break;
@@ -1285,9 +1285,9 @@
                     char *value = cj_to_string_helper(arena, root->cj_json.key_value_pair_vector[i].value, depth);
 
                     if (i == (count - 1)) {
-                        buffers[i] = cj_sprint(arena, &allocation_size, "%s\"%s\": %s", generateSpaces(num_key), key, value); 
+                        buffers[i] = cj_sprint(arena, &allocation_size, "%s\"%s\": %s", generateSpaces(arena, num_key), key, value); 
                     } else {
-                        buffers[i] = cj_sprint(arena, &allocation_size, "%s\"%s\": %s,\n", generateSpaces(num_key), key, value);  
+                        buffers[i] = cj_sprint(arena, &allocation_size, "%s\"%s\": %s,\n", generateSpaces(arena, num_key), key, value);  
                     }
                     total_allocation_size += allocation_size;
                 }
@@ -1299,7 +1299,7 @@
                     cj_cstr_append(ret, total_allocation_size, buffers[i]);
                 }
                 cj_cstr_append(ret, total_allocation_size, "\n%s}");
-                ret = cj_sprint(NULLPTR, NULLPTR, ret, generateSpaces(num_json));
+                ret = cj_sprint(NULLPTR, NULLPTR, ret, generateSpaces(arena, num_json));
 
                 return ret;
             } break;

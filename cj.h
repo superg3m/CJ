@@ -224,7 +224,7 @@
     CJ_API u32 cj_cstr_length(const char* cstring);
     CJ_API void cj_cstr_append(char* string_buffer, size_t string_buffer_capacity, const char* to_append);
 	CJ_API void cj_cstr_append_char(char* string_buffer, size_t string_buffer_capacity, const char to_append);
-    char* cj_substring(char* str, u64 start, u64 end);
+    char* cj_substring(const char* str, u64 start, u64 end);
     Boolean cj_cstr_equal(const char* s1, const char* s2);
     u32 cj_cstr_index_of(const char* str, const char* sub_string);
     char* cj_str_between_delimiters(const char* str, const char* start_delimitor, const char* end_delimitor);
@@ -745,29 +745,19 @@
         str[str_length] = to_append;
     }
 
-    char* cj_substring(char* str, u64 start, u64 end) {
+    char* cj_substring(const char* str, u64 start, u64 end) {
         cj_assert(str);
-        u64 str_length = cj_cstr_length(str); 
-        char* ret = cj_alloc((end - start) + 1);
 
-        Boolean start_check = (start >= 0) && (start <= str_length - 1);
-        Boolean end_check = (end >= 0) && (end <= str_length - 1);
+        u64 str_length = cj_cstr_length(str);
+        cj_assert_msg(start < str_length, "cj_substring: Start index out of range: [0 - %llu], got: %llu\n", str_length - 1, start);
+        cj_assert_msg(end <= str_length, "cj_substring: End index out of range: [0 - %llu], got: %llu\n", str_length, end);
+        cj_assert_msg(start <= end, "cj_substring: Start index is greater than end index (start: %llu, end: %llu)\n", start, end);
 
-        cj_assert_msg(start_check, "cj_substring: Start range is outside expected range: [%d - %llu] got: %llu\n", 0, str_length - 1, start);
-        cj_assert_msg(end_check, "cj_substring: End range is outside expected range: [%d - %llu] got: %llu\n", 0, str_length - 1, end);
-        cj_assert_msg(start <= end, "cj_substring: Start range is greater than end range[start: %llu > end: %llu]\n", start, end);
+        u64 length = end - start;
+        char* ret = cj_alloc(length + 1);
 
-        //char* str = "hello"
-        //0 - 4 = hello\0 = 6
-        //0 - 0 = h\0 = 2
-        //0 - 1 = he\0 = 3
-        //1 - 4 = ello\0 = 5
-
-        u64 counter = 0;
-        for (u64 i = start; i <= end; i++) {
-            ret[counter++] = str[i];
-        }
-        ret[counter] = '\0'; 
+        cj_memory_copy((str + start), ret, length, length);
+        ret[length] = '\0';
 
         return ret;
     }
@@ -814,7 +804,7 @@
                 continue;
             }
 
-            s32 end_index = (u32)(i + (contains_length - 1));
+            s32 end_index = (u32)(i + contains_length);
             if (end_index > str_length) {
                 break;
             }
@@ -862,7 +852,7 @@
                 continue;
             }
 
-            s32 end_index = (u32)(i + (contains_length - 1));
+            s32 end_index = (u32)(i + contains_length);
             if (end_index > str_length) {
                 break;
             }
@@ -909,7 +899,7 @@
                 continue;
             }
 
-            u32 end_index = (u32)(i + (contains_length - 1));
+            u32 end_index = (u32)(i + contains_length);
             if (end_index > str_length) {
                 break;
             }
@@ -1205,7 +1195,7 @@
         char buffer[64];
         
         snprintf(buffer, sizeof(buffer), "%.15g", value);
-        if (!cj_cstr_contains(buffer, ".")) {
+        if (!cj_cstr_index_of(buffer, ".")) {
             return 0;
         }
 
@@ -1445,7 +1435,7 @@
     }
 
     internal char* getScratchBuffer(CJ_Lexer* lexer) {
-        return cj_substring(lexer->source, lexer->left_pos, lexer->right_pos - 1);
+        return cj_substring(lexer->source, lexer->left_pos, lexer->right_pos);
     }
 
     internal CJ_TokenType getAcceptedSyntax(CJ_Lexer* lexer) {

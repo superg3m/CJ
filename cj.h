@@ -1425,6 +1425,14 @@
         return lexer;
     }
 
+    void cj_lexerFree(CJ_Lexer* lexer) {
+        u64 token_count = cj_vector_count(lexer->tokens);
+        for (u64 i = 0; i < token_count; i++) {
+            CJ_Token token = lexer->tokens[i];
+            cj_free(token.lexeme);
+        }
+    }
+
     UNUSED_FUNCTION internal void lexerReset(CJ_Lexer* lexer) {
         lexer->left_pos  = 0;
         lexer->right_pos = 0;
@@ -1453,9 +1461,12 @@
 
         for (int i = 0; i < ArrayCount(syntaxTokenTable); i++) {
             char keyword = syntaxLookup[i];
-            if (keyword == getScratchBuffer(lexer)[0]) {
+            char* buf = getScratchBuffer(lexer);
+            if (keyword == buf[0]) {
                 return syntaxTokenTable[i];
             }
+
+            cj_free(buf);
         }
 
         return CJ_TOKEN_ILLEGAL_TOKEN;
@@ -1472,9 +1483,12 @@
 
         for (int i = 0; i < ArrayCount(keywords); i++) {
             char* keyword = keywords[i];
-            if (cj_cstr_equal(keyword, getScratchBuffer(lexer))) {
+            char* buf = getScratchBuffer(lexer);
+            if (cj_cstr_equal(keyword, buf)) {
                 return keywordTokenTable[i];
             }
+
+            cj_free(buf);
         }
 
         return CJ_TOKEN_ILLEGAL_TOKEN;
@@ -1625,7 +1639,8 @@
             lexer_consumeNextToken(lexer);
         }
 
-        cj_vector_push(lexer->tokens, cj_tokenCreate(CJ_TOKEN_EOF, "", lexer->line));
+        char* emtpy = cj_alloc(1);
+        cj_vector_push(lexer->tokens, cj_tokenCreate(CJ_TOKEN_EOF, emtpy, lexer->line));
         return lexer->tokens;
     }
 #endif
@@ -1804,7 +1819,9 @@
         parser.current = 0;
         parser.tokens = token_stream;
         JSON* root = parseJSON(&parser, arena);
+
         cj_parserFree(&parser);
+        cj_lexerFree(&lexer);
 
         return root;
     }

@@ -159,7 +159,9 @@
         u32 capacity;
     } CJ_VectorHeader;
 
-    CJ_API void* cj_vector_grow(void* vector, size_t element_size);
+    typedef struct CJ_Arena CJ_Arena;
+
+    CJ_API void* cj_vector_grow_with_arena(CJ_Arena* arena, void* vector, size_t element_size);
 
     #define VECTOR_DEFAULT_CAPACITY 1
     #define cj_vector_header_base(vector) ((CJ_VectorHeader*)(((u8*)vector) - sizeof(CJ_VectorHeader)))
@@ -167,12 +169,11 @@
     #define cj_vector_capacity(vector) (*cj_vector_header_base(vector)).capacity
 
     #ifdef __cpluCJus
-        #define cj_vector_push(vector, element) vector = (decltype(vector))cj_vector_grow(vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
+        #define cj_vector_push_arena(arena, vector, element) vector = (decltype(vector))cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++]
     #else 
-        #define cj_vector_push(vector, element) vector = cj_vector_grow(vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
+        #define cj_vector_push_arena(arena, vector, element) vector = cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
     #endif
     
-    #define cj_vector_free(vector) cj_free(cj_vector_header_base(vector)); vector = NULLPTR
     //
     // ========== END CJ_VECTOR ==========
     //
@@ -216,7 +217,7 @@
     #endif
     
     //
-    // ========== END CJ_VECTOR ==========
+    // ========== END CJ_LinkedList ==========
     //
 #endif
 
@@ -480,6 +481,35 @@
 
         return vector;
     }
+
+    void* cj_vector_grow_with_arena(CJ_Arena* arena, void* vector, size_t element_size) {
+        if (vector == NULLPTR) {
+            vector = MACRO_cj_arena_push(arena, sizeof(CJ_VectorHeader) + (VECTOR_DEFAULT_CAPACITY * element_size));
+            cj_memory_zero(vector, sizeof(CJ_VectorHeader) + (VECTOR_DEFAULT_CAPACITY * element_size));
+            vector = (u8*)vector + sizeof(CJ_VectorHeader);
+            cj_vector_capacity(vector) = VECTOR_DEFAULT_CAPACITY;
+        }
+
+        
+        u32 count = cj_vector_count(vector);
+        u32 capactiy = cj_vector_capacity(vector);
+
+        if (capactiy < count + 1) {
+            size_t old_allocation_size = sizeof(CJ_VectorHeader) + (capactiy * element_size);
+            u32 new_capactiy = capactiy * 2;
+            size_t new_allocation_size = sizeof(CJ_VectorHeader) + (new_capactiy * element_size);
+
+            void* new_vector = MACRO_cj_arena_push(arena, new_allocation_size);
+            cj_memory_copy(cj_vector_header_base(vector), new_vector, old_allocation_size, new_allocation_size);
+            vector = (u8*)new_vector + sizeof(CJ_VectorHeader);
+
+            cj_vector_header_base(vector)->count = count;
+            cj_vector_header_base(vector)->capacity = new_capactiy;
+        }
+
+        return vector;
+    }
+
     //
     // ========== END CJ_VECTOR ==========
     //
@@ -914,7 +944,7 @@
         return contains_substring;
     }
 
-    char* cj_cstr_between_delimiters(const char* str, const char* start_delimitor, const char* end_delimitor) {
+    char* cj_cstr_between_delimiters(CJ_Arena* arena, const char* str, const char* start_delimitor, const char* end_delimitor) {
         cj_assert(str);
         cj_assert(start_delimitor);
         cj_assert(end_delimitor);
@@ -933,7 +963,7 @@
         }
 
         u64 allocation_size = cj_cstr_length(str) + 1;
-        char* ret = cj_alloc(allocation_size); // techinally allocating more than I need here
+        char* ret = MACRO_cj_arena_push(arena, allocation_size); // techinally allocating more than I need here
 
         if (start_delimitor_index == -1 || end_delimitor_index == -1) {
             cj_free(ret);
@@ -998,7 +1028,8 @@
     CJ_Arena* MACRO_cj_arena_free(CJ_Arena* arena) {
         cj_assert(arena);
 
-        for (u32 i = 0; i < arena->pages->count; i++) {
+        u32 page_count = arena->pages->count;
+        for (u32 i = 0; i < page_count; i++) {
             CJ_ArenaPage* page = (CJ_ArenaPage*)cj_linked_list_remove(arena->pages, 0).data;
             cj_assert(page->base_address);
             cj_free(page->base_address);
@@ -1092,7 +1123,7 @@
         pair.key = key;
         pair.value = value;
 
-        cj_vector_push(root->cj_json.key_value_pair_vector, pair);
+        cj_vector_push_arena(root->arena, root->cj_json.key_value_pair_vector, pair);
     }
 
     void MACRO_cj_array_push(JSON* root, JSON* value) {
@@ -1101,7 +1132,7 @@
             // If its not of type JSON then you shouldn't be pushing to it
         }
 
-        cj_vector_push(root->cj_array.jsonVector, value);
+        cj_vector_push_arena(root->arena, root->cj_array.jsonVector, value);
     }
 
     JSON* JSON_INT(CJ_Arena* arena, int value) {
@@ -1406,13 +1437,14 @@
         u64 source_size;
 
         CJ_Token* tokens;
+        CJ_Arena* arena;
     } CJ_Lexer;
 
     internal Boolean isWhitespace(char c) {
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
 
-    internal CJ_Lexer cj_lexerCreate() {
+    internal CJ_Lexer cj_lexerCreate(CJ_Arena* arena) {
         CJ_Lexer lexer = {0};
 
         lexer.left_pos  = 0;
@@ -1421,6 +1453,7 @@
         lexer.c = '\0';
         lexer.source = NULLPTR;
         lexer.source_size = 0;
+        lexer.arena = arena;
 
         return lexer;
     }
@@ -1463,6 +1496,7 @@
             char keyword = syntaxLookup[i];
             char* buf = getScratchBuffer(lexer);
             if (keyword == buf[0]) {
+                cj_free(buf);
                 return syntaxTokenTable[i];
             }
 
@@ -1485,6 +1519,7 @@
             char* keyword = keywords[i];
             char* buf = getScratchBuffer(lexer);
             if (cj_cstr_equal(keyword, buf)) {
+                cj_free(buf);
                 return keywordTokenTable[i];
             }
 
@@ -1512,7 +1547,7 @@
     }
 
     internal void addToken(CJ_Lexer* lexer, CJ_TokenType type) {
-        cj_vector_push(lexer->tokens, cj_tokenCreate(type, getScratchBuffer(lexer), lexer->line));
+        cj_vector_push_arena(lexer->arena, lexer->tokens, cj_tokenCreate(type, getScratchBuffer(lexer), lexer->line));
     }
 
     internal Boolean consumeWhitespace(CJ_Lexer* lexer) {
@@ -1640,7 +1675,7 @@
         }
 
         char* emtpy = cj_alloc(1);
-        cj_vector_push(lexer->tokens, cj_tokenCreate(CJ_TOKEN_EOF, emtpy, lexer->line));
+        cj_vector_push_arena(lexer->arena, lexer->tokens, cj_tokenCreate(CJ_TOKEN_EOF, emtpy, lexer->line));
         return lexer->tokens;
     }
 #endif
@@ -1748,7 +1783,7 @@
             } break;
 
             case CJ_TOKEN_STRING_LITERAL: {
-                char* str_in_between_quotes = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
+                char* str_in_between_quotes = cj_cstr_between_delimiters(arena, parser->tok.lexeme, "\"", "\""); // memory leak
                 return JSON_STRING(arena, str_in_between_quotes);
             } break;
 
@@ -1764,7 +1799,7 @@
                         return NULLPTR;
                     }
 
-                    cj_vector_push(array->cj_array.jsonVector, element);
+                    cj_vector_push_arena(arena, array->cj_array.jsonVector, element);
 
                     parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
                 }
@@ -1780,7 +1815,7 @@
                         return NULLPTR;
                     }
 
-                    char* key = cj_cstr_between_delimiters(parser->tok.lexeme, "\"", "\""); // memory leak
+                    char* key = cj_cstr_between_delimiters(arena, parser->tok.lexeme, "\"", "\""); // memory leak
                     
                     if (!parser_consumeOnMatch(parser, CJ_TOKEN_COLON)) {
                         return NULLPTR;
@@ -1795,7 +1830,7 @@
                     pair.key = key;
                     pair.value = value;
 
-                    cj_vector_push(jsonObject->cj_json.key_value_pair_vector, pair);
+                    cj_vector_push_arena(arena, jsonObject->cj_json.key_value_pair_vector, pair);
 
                     parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
                 }
@@ -1812,7 +1847,7 @@
     }
 
     JSON* cj_parse(CJ_Arena* arena, char* json_buffer) {
-        CJ_Lexer lexer = cj_lexerCreate();
+        CJ_Lexer lexer = cj_lexerCreate(arena);
         CJ_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
 
         CJ_Parser parser = cj_parserCreate();

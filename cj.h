@@ -894,7 +894,7 @@
             return -1;
         }
 
-        CJ_StringView substring_view = cj_strview_create((char*)str, 0, substring_length);
+        CJ_StringView substring_view = cj_strview_create((char*)substring, 0, substring_length);
         
         s64 ret_index = -1;
         for (u64 i = 0; i <= (str_length - substring_length); i++) {

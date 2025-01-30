@@ -150,38 +150,6 @@
     u8* cj_os_read_entire_file(const char* path, u64* returned_file_size);
 #endif
 
-#if defined(CJ_INCLUDE_COLLECTIONS)
-    //
-    // ========== START CJ_VECTOR ==========
-    //
-    typedef struct CJ_VectorHeader {
-        u32 count;
-        u32 capacity;
-    } CJ_VectorHeader;
-
-    typedef struct CJ_Arena CJ_Arena;
-
-    CJ_API void* cj_vector_grow_with_arena(CJ_Arena* arena, void* vector, size_t element_size);
-
-    #define VECTOR_DEFAULT_CAPACITY 1
-    #define cj_vector_header_base(vector) ((CJ_VectorHeader*)(((u8*)vector) - sizeof(CJ_VectorHeader)))
-    #define cj_vector_count(vector) (vector ? (*cj_vector_header_base(vector)).count : 0)
-    #define cj_vector_capacity(vector) (*cj_vector_header_base(vector)).capacity
-
-    #ifdef __cpluCJus
-        #define cj_vector_push_arena(arena, vector, element) vector = (decltype(vector))cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++]
-    #else 
-        #define cj_vector_push_arena(arena, vector, element) vector = cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
-    #endif
-    //
-    // ========== END CJ_VECTOR ==========
-    //
-#endif
-
-#if defined(CJ_INCLUDE_CSTRING)
-
-#endif
-
 #if defined(CJ_INCLUDE_ARENA)
     #define CJ_ARENA_FLAG_FIXED 0
     #define CJ_ARENA_FLAG_CIRCULAR 1
@@ -405,6 +373,27 @@
     //
     // ========== START CJ_VECTOR ==========
     //
+
+    typedef struct CJ_VectorHeader {
+        u32 count;
+        u32 capacity;
+    } CJ_VectorHeader;
+
+    typedef struct CJ_Arena CJ_Arena;
+
+    CJ_API void* cj_vector_grow_with_arena(CJ_Arena* arena, void* vector, size_t element_size);
+
+    #define VECTOR_DEFAULT_CAPACITY 1
+    #define cj_vector_header_base(vector) ((CJ_VectorHeader*)(((u8*)vector) - sizeof(CJ_VectorHeader)))
+    #define cj_vector_count(vector) (vector ? (*cj_vector_header_base(vector)).count : 0)
+    #define cj_vector_capacity(vector) (*cj_vector_header_base(vector)).capacity
+
+    #ifdef __cpluCJus
+        #define cj_vector_push_arena(arena, vector, element) vector = (decltype(vector))cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++]
+    #else 
+        #define cj_vector_push_arena(arena, vector, element) vector = cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
+    #endif
+
     void* cj_vector_grow(void* vector, size_t element_size) {
         if (vector == NULLPTR) {
             vector = cj_alloc(sizeof(CJ_VectorHeader) + (VECTOR_DEFAULT_CAPACITY * element_size));

@@ -381,7 +381,7 @@
         cj_free(temp_data_copy);
     }
 
-    void cj_memory_zero(void* data, size_t data_size_in_bytes) {
+    void cj_memory_zero(void* data, u64 data_size_in_bytes) {
         for (u64 i = 0; i < data_size_in_bytes; i++) {
             ((u8*)data)[i] = 0;
         }

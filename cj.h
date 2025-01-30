@@ -173,18 +173,8 @@
     #else 
         #define cj_vector_push_arena(arena, vector, element) vector = cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
     #endif
-    
     //
     // ========== END CJ_VECTOR ==========
-    //
-
-    //
-    // ========== START CJ_LinkedList ==========
-    //
-
-    
-    //
-    // ========== END CJ_LinkedList ==========
     //
 #endif
 
@@ -1811,6 +1801,17 @@
         CJ_Parser parser = cj_parserCreate();
         parser.current = 0;
         parser.tokens = token_stream;
+
+        // JSON** states;
+        // cj_stack_push(states, root); // ensure first token is { for object
+        // while (cj_stack_empty(states) == FALSE) {
+        //     JSON* current_state = cj_stack_pop(states);
+        //     Boolean needs_to_recurse = parseJSON(arena, current_state);
+        //     if (need_to_recurse) {
+        //          cj_stack_push(states, current_state);
+        //     }
+        // }
+
         JSON* root = parseJSON(&parser, arena);
 
         cj_parserFree(&parser);

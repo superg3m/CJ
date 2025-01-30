@@ -181,3 +181,14 @@ CJ is open source and available under the [MIT License](LICENSE).
 
 #### Notes for me:
 - Need to implement duplicate key checks should be trivial
+
+JSON** states;
+stack_push(states, iniital);
+while (stack_is_empty(states) == false) {
+    JSON* current_state = stack_pop(states);
+    Boolean needs_to_recurse = parse_next_thing(arena, current_state);
+    if (need_to_recurse) {
+       state_push(states, current_state);
+    }
+}
+

@@ -58,8 +58,11 @@ int main() {
     char* src = "[]"; // This needs to error out when parsed because the top level root has to be a json object it must be
 
     CJ_Arena *a = cj_arena_create(0);
+    
     JSON* parsed = cj_parse(a, src);
     char* formatted = cj_to_string(parsed);
     printf("%s\n", formatted);
+
+
     cj_arena_free(a);
 }

@@ -1,6 +1,7 @@
 #include <string.h>
 #include "cj.h"
 
+// TESTINGS A BROKEN CASE
 int main(void) {
     char src[1<<14] = {0};
     memset(src, '[', sizeof(src)-1);

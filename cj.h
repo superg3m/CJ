@@ -25,10 +25,7 @@
 #endif
 
 #define CJ_INCLUDE_TYPES
-#define CJ_INCLUDE_MEMORY
 #define CJ_INCLUDE_OS
-#define CJ_INCLUDE_COLLECTIONS
-#define CJ_INCLUDE_CSTRING
 #define CJ_INCLUDE_ARENA
 
 #define CJ_INCLUDE_CREATION
@@ -147,15 +144,12 @@
     typedef struct CJ_Arena CJ_Arena;
 
     CJ_API CJ_Arena* MACRO_cj_arena_create(size_t allocation_size, CJ_ArenaFlag flag, u8 alignment);
-    CJ_API void* MACRO_cj_arena_push(CJ_Arena* arena, size_t element_size);	
     CJ_API CJ_Arena* MACRO_cj_arena_free(CJ_Arena* arena);
-    CJ_API void cj_arena_clear(CJ_Arena* arena);
 
     #define cj_arena_create(allocation_size) MACRO_cj_arena_create(allocation_size, CJ_ARENA_FLAG_EXTENDABLE_PAGES, 0)
     #define cj_arena_create_custom(allocation_size, flags, alignment) MACRO_cj_arena_create(allocation_size, flags, alignment)
     #define cj_arena_free(arena) arena = MACRO_cj_arena_free(arena)
-    #define cj_arena_push(arena, type) ((type*)MACRO_cj_arena_push(arena, sizeof(type)))
-    #define cj_arena_push_array(arena, type, element_count) ((type*)MACRO_cj_arena_push(arena, sizeof(type) * element_count))
+
 #endif
 
 #if defined(CJ_INCLUDE_CREATION)
@@ -379,6 +373,7 @@
 
     typedef struct CJ_Arena CJ_Arena;
 
+    CJ_API void* MACRO_cj_arena_push(CJ_Arena* arena, size_t element_size);
     CJ_API void* cj_vector_grow_with_arena(CJ_Arena* arena, void* vector, size_t element_size);
 
     #define VECTOR_DEFAULT_CAPACITY 1
@@ -931,6 +926,12 @@
         CJ_ArenaFlag flag;
         u8 alignment;
     } CJ_Arena;
+
+    CJ_API void* MACRO_cj_arena_push(CJ_Arena* arena, size_t element_size);	
+    CJ_API void cj_arena_clear(CJ_Arena* arena);
+
+    #define cj_arena_push(arena, type) ((type*)MACRO_cj_arena_push(arena, sizeof(type)))
+    #define cj_arena_push_array(arena, type, element_count) ((type*)MACRO_cj_arena_push(arena, sizeof(type) * element_count))
 
     Boolean cj_is_set(CJ_Arena* arena, CJ_ArenaFlag flag) {
         return arena->flag == flag;

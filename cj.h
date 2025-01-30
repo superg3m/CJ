@@ -107,26 +107,6 @@
     #elif defined(_MSC_VER)
         #define UNUSED_FUNCTION
     #endif
-
-    #define cj_assert(expression)                     \
-    do {                                               \
-        if (!(expression)) {                           \
-            char msg_art[] = "Func: %s, File: %s:%d\n";    \
-            printf(msg_art, __func__, __FILE__, __LINE__); \
-            CRASH;                                     \
-        }                                              \
-    } while (FALSE)                                    \
-
-    #define cj_assert_msg(expression, message, ...)	          \
-    do {                                                          \
-        if (!(expression)) {                                      \
-            char msg_art[] = "Func: %s, File: %s:%d\n";               \
-            printf(msg_art, __func__, __FILE__, __LINE__);            \
-            printf(message, ##__VA_ARGS__);                       \
-            CRASH;                                                \
-        }                                                         \
-    } while (FALSE)                                               \
-
 #endif
 
 #if defined (CJ_INCLUDE_OS)
@@ -243,6 +223,25 @@
 //
 
 #if defined(CJ_IMPL_MEMORY)
+    #define cj_assert(expression)                     \
+    do {                                               \
+        if (!(expression)) {                           \
+            char msg_art[] = "Func: %s, File: %s:%d\n";    \
+            printf(msg_art, __func__, __FILE__, __LINE__); \
+            CRASH;                                     \
+        }                                              \
+    } while (FALSE)                                    \
+
+    #define cj_assert_msg(expression, message, ...)	          \
+    do {                                                          \
+        if (!(expression)) {                                      \
+            char msg_art[] = "Func: %s, File: %s:%d\n";               \
+            printf(msg_art, __func__, __FILE__, __LINE__);            \
+            printf(message, ##__VA_ARGS__);                       \
+            CRASH;                                                \
+        }                                                         \
+    } while (FALSE)                                               \
+
     void* cj_alloc(u64 allocation_size);
     void* MACRO_cj_free(void* data);
     void* cj_realloc(void* data, u64 old_allocation_size, u64 new_allocation_size);

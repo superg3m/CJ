@@ -181,40 +181,7 @@
     //
     // ========== START CJ_LinkedList ==========
     //
-    typedef struct CJ_Node {
-        struct CJ_Node* next;
-        struct CJ_Node* prev;
-        size_t element_size_in_bytes;
-        void* data;
-    } CJ_Node;
 
-    typedef struct CJ_LinkedList {
-        CJ_Node* head;
-        CJ_Node* tail;
-        size_t element_size_in_bytes;
-        u32 count;
-        Boolean is_pointer_type;
-    } CJ_LinkedList;
-
-    CJ_API CJ_LinkedList* MACRO_cj_linked_list_create(size_t element_size_in_bytes, Boolean is_pointer_type);
-    CJ_API CJ_Node* cj_linked_list_insert(CJ_LinkedList* linked_list, u32 index, void* data);
-    CJ_API CJ_Node* cj_linked_list_get_node(CJ_LinkedList* linked_list, u32 index);
-    CJ_API void* cj_linked_list_get(CJ_LinkedList* linked_list, u32 index);
-    CJ_API void* cj_linked_list_peek_head(CJ_LinkedList* linked_list);
-    CJ_API void* cj_linked_list_peek_tail(CJ_LinkedList* linked_list);
-    CJ_API CJ_Node* cj_linked_list_push(CJ_LinkedList* linked_list, void* data);
-    CJ_API CJ_Node cj_linked_list_pop(CJ_LinkedList* linked_list);
-    CJ_API CJ_Node cj_linked_list_remove(CJ_LinkedList* linked_list, u32 index);
-    CJ_API void* MACRO_cj_linked_list_free(CJ_LinkedList* linked_list);
-    CJ_API u32 cj_linked_list_node_to_index(CJ_LinkedList* linked_list, CJ_Node* address);
-
-    #define cj_linked_list_create(type, is_pointer_type) MACRO_cj_linked_list_create(sizeof(type), is_pointer_type)
-
-    #ifdef __cpluCJus
-        #define cj_linked_list_free(linked_list) linked_list = (decltype(linked_list))MACRO_cj_linked_list_free(linked_list)
-    #else 
-        #define cj_linked_list_free(linked_list) linked_list = MACRO_cj_linked_list_free(linked_list)
-    #endif
     
     //
     // ========== END CJ_LinkedList ==========
@@ -510,6 +477,30 @@
     //
     // ========== START CJ_LinkedList ==========
     //
+
+    typedef struct CJ_Node {
+        struct CJ_Node* next;
+        struct CJ_Node* prev;
+        size_t element_size_in_bytes;
+        void* data;
+    } CJ_Node;
+
+    typedef struct CJ_LinkedList {
+        CJ_Node* head;
+        CJ_Node* tail;
+        size_t element_size_in_bytes;
+        u32 count;
+        Boolean is_pointer_type;
+    } CJ_LinkedList;
+
+    #define cj_linked_list_create(type, is_pointer_type) MACRO_cj_linked_list_create(sizeof(type), is_pointer_type)
+
+    #ifdef __cpluCJus
+        #define cj_linked_list_free(linked_list) linked_list = (decltype(linked_list))MACRO_cj_linked_list_free(linked_list)
+    #else 
+        #define cj_linked_list_free(linked_list) linked_list = MACRO_cj_linked_list_free(linked_list)
+    #endif
+
     CJ_LinkedList* MACRO_cj_linked_list_create(size_t element_size_in_bytes, Boolean is_pointer_type) {
         CJ_LinkedList* ret = (CJ_LinkedList*)cj_alloc(sizeof(CJ_LinkedList));
         ret->count = 0;
@@ -666,10 +657,6 @@
         return 0; // should never get here
     }
 
-    CJ_Node cj_linked_list_pop(CJ_LinkedList* linked_list) {
-        return cj_linked_list_remove(linked_list, linked_list->count - 1);
-    }
-
     CJ_Node cj_linked_list_remove(CJ_LinkedList* linked_list, u32 index) {
         cj_assert(linked_list); 
         cj_assert(linked_list->count > 0); 
@@ -715,6 +702,11 @@
 
         return ret;
     }
+
+    CJ_Node cj_linked_list_pop(CJ_LinkedList* linked_list) {
+        return cj_linked_list_remove(linked_list, linked_list->count - 1);
+    }
+
 
     void* MACRO_cj_linked_list_free(CJ_LinkedList* linked_list) {
         cj_assert(linked_list); 

@@ -63,6 +63,5 @@ int main() {
     char* formatted = cj_to_string(parsed);
     printf("%s\n", formatted);
 
-
     cj_arena_free(a);
 }

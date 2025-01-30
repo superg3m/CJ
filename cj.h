@@ -132,19 +132,6 @@
 
 #endif
 
-#if defined(CJ_INCLUDE_MEMORY)
-    void* cj_alloc(u64 allocation_size);
-    void* MACRO_cj_free(void* data);
-    void* cj_realloc(void* data, u64 old_allocation_size, u64 new_allocation_size);
-
-    CJ_API void cj_memory_copy(const void* source, void* destination, u64 source_size_in_bytes, u64 destination_size_in_bytes);
-    CJ_API void cj_memory_zero(void* data, u64 data_size_in_bytes);
-
-    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u64 buffer_one_size, u64 buffer_two_size);
-
-    #define cj_free(data) data = MACRO_cj_free(data)
-#endif
-
 #if defined (CJ_INCLUDE_OS)
     Boolean cj_os_path_exists(const char* path);
     u8* cj_os_read_entire_file(const char* path, u64* returned_file_size);
@@ -262,6 +249,17 @@
 //
 
 #if defined(CJ_IMPL_MEMORY)
+    void* cj_alloc(u64 allocation_size);
+    void* MACRO_cj_free(void* data);
+    void* cj_realloc(void* data, u64 old_allocation_size, u64 new_allocation_size);
+
+    CJ_API void cj_memory_copy(const void* source, void* destination, u64 source_size_in_bytes, u64 destination_size_in_bytes);
+    CJ_API void cj_memory_zero(void* data, u64 data_size_in_bytes);
+
+    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u64 buffer_one_size, u64 buffer_two_size);
+
+    #define cj_free(data) data = MACRO_cj_free(data)
+
     void* cj_alloc(u64 allocation_size) {
         cj_assert(allocation_size != 0);
 

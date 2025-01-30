@@ -181,3 +181,5 @@ CJ is open source and available under the [MIT License](LICENSE).
 
 #### Notes for me:
 - Need to implement duplicate key checks should be trivial
+
+- I have to implement scientific notation | 3.7e-5 = 3.7E-5 = 3.7×10-5 = 0.000037

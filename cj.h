@@ -25,10 +25,7 @@
 #endif
 
 #define CJ_INCLUDE_TYPES
-#define CJ_INCLUDE_MEMORY
 #define CJ_INCLUDE_OS
-#define CJ_INCLUDE_COLLECTIONS
-#define CJ_INCLUDE_CSTRING
 #define CJ_INCLUDE_ARENA
 
 #define CJ_INCLUDE_CREATION
@@ -110,119 +107,11 @@
     #elif defined(_MSC_VER)
         #define UNUSED_FUNCTION
     #endif
-
-    #define cj_assert(expression)                     \
-    do {                                               \
-        if (!(expression)) {                           \
-            char msg_art[] = "Func: %s, File: %s:%d\n";    \
-            printf(msg_art, __func__, __FILE__, __LINE__); \
-            CRASH;                                     \
-        }                                              \
-    } while (FALSE)                                    \
-
-    #define cj_assert_msg(expression, message, ...)	          \
-    do {                                                          \
-        if (!(expression)) {                                      \
-            char msg_art[] = "Func: %s, File: %s:%d\n";               \
-            printf(msg_art, __func__, __FILE__, __LINE__);            \
-            printf(message, ##__VA_ARGS__);                       \
-            CRASH;                                                \
-        }                                                         \
-    } while (FALSE)                                               \
-
-#endif
-
-#if defined(CJ_INCLUDE_MEMORY)
-    void* cj_alloc(u64 allocation_size);
-    void* MACRO_cj_free(void* data);
-    void* cj_realloc(void* data, u64 old_allocation_size, u64 new_allocation_size);
-
-    CJ_API void cj_memory_copy(const void* source, void* destination, u64 source_size_in_bytes, u64 destination_size_in_bytes);
-    CJ_API void cj_memory_zero(void* data, u64 data_size_in_bytes);
-
-    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u64 buffer_one_size, u64 buffer_two_size);
-
-    #define cj_free(data) data = MACRO_cj_free(data)
 #endif
 
 #if defined (CJ_INCLUDE_OS)
     Boolean cj_os_path_exists(const char* path);
     u8* cj_os_read_entire_file(const char* path, u64* returned_file_size);
-#endif
-
-#if defined(CJ_INCLUDE_COLLECTIONS)
-    //
-    // ========== START CJ_VECTOR ==========
-    //
-    typedef struct CJ_VectorHeader {
-        u32 count;
-        u32 capacity;
-    } CJ_VectorHeader;
-
-    typedef struct CJ_Arena CJ_Arena;
-
-    CJ_API void* cj_vector_grow_with_arena(CJ_Arena* arena, void* vector, size_t element_size);
-
-    #define VECTOR_DEFAULT_CAPACITY 1
-    #define cj_vector_header_base(vector) ((CJ_VectorHeader*)(((u8*)vector) - sizeof(CJ_VectorHeader)))
-    #define cj_vector_count(vector) (vector ? (*cj_vector_header_base(vector)).count : 0)
-    #define cj_vector_capacity(vector) (*cj_vector_header_base(vector)).capacity
-
-    #ifdef __cpluCJus
-        #define cj_vector_push_arena(arena, vector, element) vector = (decltype(vector))cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++]
-    #else 
-        #define cj_vector_push_arena(arena, vector, element) vector = cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
-    #endif
-    
-    //
-    // ========== END CJ_VECTOR ==========
-    //
-
-    //
-    // ========== START CJ_LinkedList ==========
-    //
-    typedef struct CJ_Node {
-        struct CJ_Node* next;
-        struct CJ_Node* prev;
-        size_t element_size_in_bytes;
-        void* data;
-    } CJ_Node;
-
-    typedef struct CJ_LinkedList {
-        CJ_Node* head;
-        CJ_Node* tail;
-        size_t element_size_in_bytes;
-        u32 count;
-        Boolean is_pointer_type;
-    } CJ_LinkedList;
-
-    CJ_API CJ_LinkedList* MACRO_cj_linked_list_create(size_t element_size_in_bytes, Boolean is_pointer_type);
-    CJ_API CJ_Node* cj_linked_list_insert(CJ_LinkedList* linked_list, u32 index, void* data);
-    CJ_API CJ_Node* cj_linked_list_get_node(CJ_LinkedList* linked_list, u32 index);
-    CJ_API void* cj_linked_list_get(CJ_LinkedList* linked_list, u32 index);
-    CJ_API void* cj_linked_list_peek_head(CJ_LinkedList* linked_list);
-    CJ_API void* cj_linked_list_peek_tail(CJ_LinkedList* linked_list);
-    CJ_API CJ_Node* cj_linked_list_push(CJ_LinkedList* linked_list, void* data);
-    CJ_API CJ_Node cj_linked_list_pop(CJ_LinkedList* linked_list);
-    CJ_API CJ_Node cj_linked_list_remove(CJ_LinkedList* linked_list, u32 index);
-    CJ_API void* MACRO_cj_linked_list_free(CJ_LinkedList* linked_list);
-    CJ_API u32 cj_linked_list_node_to_index(CJ_LinkedList* linked_list, CJ_Node* address);
-
-    #define cj_linked_list_create(type, is_pointer_type) MACRO_cj_linked_list_create(sizeof(type), is_pointer_type)
-
-    #ifdef __cpluCJus
-        #define cj_linked_list_free(linked_list) linked_list = (decltype(linked_list))MACRO_cj_linked_list_free(linked_list)
-    #else 
-        #define cj_linked_list_free(linked_list) linked_list = MACRO_cj_linked_list_free(linked_list)
-    #endif
-    
-    //
-    // ========== END CJ_LinkedList ==========
-    //
-#endif
-
-#if defined(CJ_INCLUDE_CSTRING)
-
 #endif
 
 #if defined(CJ_INCLUDE_ARENA)
@@ -235,15 +124,12 @@
     typedef struct CJ_Arena CJ_Arena;
 
     CJ_API CJ_Arena* MACRO_cj_arena_create(size_t allocation_size, CJ_ArenaFlag flag, u8 alignment);
-    CJ_API void* MACRO_cj_arena_push(CJ_Arena* arena, size_t element_size);	
     CJ_API CJ_Arena* MACRO_cj_arena_free(CJ_Arena* arena);
-    CJ_API void cj_arena_clear(CJ_Arena* arena);
 
     #define cj_arena_create(allocation_size) MACRO_cj_arena_create(allocation_size, CJ_ARENA_FLAG_EXTENDABLE_PAGES, 0)
     #define cj_arena_create_custom(allocation_size, flags, alignment) MACRO_cj_arena_create(allocation_size, flags, alignment)
     #define cj_arena_free(arena) arena = MACRO_cj_arena_free(arena)
-    #define cj_arena_push(arena, type) ((type*)MACRO_cj_arena_push(arena, sizeof(type)))
-    #define cj_arena_push_array(arena, type, element_count) ((type*)MACRO_cj_arena_push(arena, sizeof(type) * element_count))
+
 #endif
 
 #if defined(CJ_INCLUDE_CREATION)
@@ -337,6 +223,36 @@
 //
 
 #if defined(CJ_IMPL_MEMORY)
+    #define cj_assert(expression)                     \
+    do {                                               \
+        if (!(expression)) {                           \
+            char msg_art[] = "Func: %s, File: %s:%d\n";    \
+            printf(msg_art, __func__, __FILE__, __LINE__); \
+            CRASH;                                     \
+        }                                              \
+    } while (FALSE)                                    \
+
+    #define cj_assert_msg(expression, message, ...)	          \
+    do {                                                          \
+        if (!(expression)) {                                      \
+            char msg_art[] = "Func: %s, File: %s:%d\n";               \
+            printf(msg_art, __func__, __FILE__, __LINE__);            \
+            printf(message, ##__VA_ARGS__);                       \
+            CRASH;                                                \
+        }                                                         \
+    } while (FALSE)                                               \
+
+    void* cj_alloc(u64 allocation_size);
+    void* MACRO_cj_free(void* data);
+    void* cj_realloc(void* data, u64 old_allocation_size, u64 new_allocation_size);
+
+    CJ_API void cj_memory_copy(const void* source, void* destination, u64 source_size_in_bytes, u64 destination_size_in_bytes);
+    CJ_API void cj_memory_zero(void* data, u64 data_size_in_bytes);
+
+    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u64 buffer_one_size, u64 buffer_two_size);
+
+    #define cj_free(data) data = MACRO_cj_free(data)
+
     void* cj_alloc(u64 allocation_size) {
         cj_assert(allocation_size != 0);
 
@@ -381,7 +297,7 @@
         cj_free(temp_data_copy);
     }
 
-    void cj_memory_zero(void* data, u64 data_size_in_bytes) {
+    void cj_memory_zero(void* data, size_t data_size_in_bytes) {
         for (u64 i = 0; i < data_size_in_bytes; i++) {
             ((u8*)data)[i] = 0;
         }
@@ -448,6 +364,28 @@
     //
     // ========== START CJ_VECTOR ==========
     //
+
+    typedef struct CJ_VectorHeader {
+        u32 count;
+        u32 capacity;
+    } CJ_VectorHeader;
+
+    typedef struct CJ_Arena CJ_Arena;
+
+    CJ_API void* MACRO_cj_arena_push(CJ_Arena* arena, size_t element_size);
+    CJ_API void* cj_vector_grow_with_arena(CJ_Arena* arena, void* vector, size_t element_size);
+
+    #define VECTOR_DEFAULT_CAPACITY 1
+    #define cj_vector_header_base(vector) ((CJ_VectorHeader*)(((u8*)vector) - sizeof(CJ_VectorHeader)))
+    #define cj_vector_count(vector) (vector ? (*cj_vector_header_base(vector)).count : 0)
+    #define cj_vector_capacity(vector) (*cj_vector_header_base(vector)).capacity
+
+    #ifdef __cpluCJus
+        #define cj_vector_push_arena(arena, vector, element) vector = (decltype(vector))cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++]
+    #else 
+        #define cj_vector_push_arena(arena, vector, element) vector = cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
+    #endif
+
     void* cj_vector_grow(void* vector, size_t element_size) {
         if (vector == NULLPTR) {
             vector = cj_alloc(sizeof(CJ_VectorHeader) + (VECTOR_DEFAULT_CAPACITY * element_size));
@@ -510,6 +448,30 @@
     //
     // ========== START CJ_LinkedList ==========
     //
+
+    typedef struct CJ_Node {
+        struct CJ_Node* next;
+        struct CJ_Node* prev;
+        size_t element_size_in_bytes;
+        void* data;
+    } CJ_Node;
+
+    typedef struct CJ_LinkedList {
+        CJ_Node* head;
+        CJ_Node* tail;
+        size_t element_size_in_bytes;
+        u32 count;
+        Boolean is_pointer_type;
+    } CJ_LinkedList;
+
+    #define cj_linked_list_create(type, is_pointer_type) MACRO_cj_linked_list_create(sizeof(type), is_pointer_type)
+
+    #ifdef __cpluCJus
+        #define cj_linked_list_free(linked_list) linked_list = (decltype(linked_list))MACRO_cj_linked_list_free(linked_list)
+    #else 
+        #define cj_linked_list_free(linked_list) linked_list = MACRO_cj_linked_list_free(linked_list)
+    #endif
+
     CJ_LinkedList* MACRO_cj_linked_list_create(size_t element_size_in_bytes, Boolean is_pointer_type) {
         CJ_LinkedList* ret = (CJ_LinkedList*)cj_alloc(sizeof(CJ_LinkedList));
         ret->count = 0;
@@ -666,10 +628,6 @@
         return 0; // should never get here
     }
 
-    CJ_Node cj_linked_list_pop(CJ_LinkedList* linked_list) {
-        return cj_linked_list_remove(linked_list, linked_list->count - 1);
-    }
-
     CJ_Node cj_linked_list_remove(CJ_LinkedList* linked_list, u32 index) {
         cj_assert(linked_list); 
         cj_assert(linked_list->count > 0); 
@@ -715,6 +673,11 @@
 
         return ret;
     }
+
+    CJ_Node cj_linked_list_pop(CJ_LinkedList* linked_list) {
+        return cj_linked_list_remove(linked_list, linked_list->count - 1);
+    }
+
 
     void* MACRO_cj_linked_list_free(CJ_LinkedList* linked_list) {
         cj_assert(linked_list); 
@@ -962,6 +925,12 @@
         CJ_ArenaFlag flag;
         u8 alignment;
     } CJ_Arena;
+
+    CJ_API void* MACRO_cj_arena_push(CJ_Arena* arena, size_t element_size);	
+    CJ_API void cj_arena_clear(CJ_Arena* arena);
+
+    #define cj_arena_push(arena, type) ((type*)MACRO_cj_arena_push(arena, sizeof(type)))
+    #define cj_arena_push_array(arena, type, element_count) ((type*)MACRO_cj_arena_push(arena, sizeof(type) * element_count))
 
     Boolean cj_is_set(CJ_Arena* arena, CJ_ArenaFlag flag) {
         return arena->flag == flag;
@@ -1819,6 +1788,17 @@
         CJ_Parser parser = cj_parserCreate();
         parser.current = 0;
         parser.tokens = token_stream;
+
+        // JSON** states;
+        // cj_stack_push(states, root); // ensure first token is { for object
+        // while (cj_stack_empty(states) == FALSE) {
+        //     JSON* current_state = cj_stack_pop(states);
+        //     Boolean needs_to_recurse = parseJSON(arena, current_state);
+        //     if (need_to_recurse) {
+        //          cj_stack_push(states, current_state);
+        //     }
+        // }
+
         JSON* root = parseJSON(&parser, arena);
 
         cj_parserFree(&parser);

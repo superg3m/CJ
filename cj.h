@@ -137,10 +137,10 @@
     void* MACRO_cj_free(void* data);
     void* cj_realloc(void* data, u64 old_allocation_size, u64 new_allocation_size);
 
-    CJ_API void cj_memory_copy(const void* source, void* destination, size_t source_size_in_bytes, size_t destination_size_in_bytes);
-    CJ_API void cj_memory_zero(void* data, size_t data_size_in_bytes);
+    CJ_API void cj_memory_copy(const void* source, void* destination, u64 source_size_in_bytes, u64 destination_size_in_bytes);
+    CJ_API void cj_memory_zero(void* data, u64 data_size_in_bytes);
 
-    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u32 buffer_one_size, u32 buffer_two_size);
+    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u64 buffer_one_size, u64 buffer_two_size);
 
     #define cj_free(data) data = MACRO_cj_free(data)
 #endif
@@ -222,14 +222,7 @@
 #endif
 
 #if defined(CJ_INCLUDE_CSTRING)
-    CJ_API u32 cj_cstr_length(const char* cstring);
-    CJ_API void cj_cstr_append(char* string_buffer, size_t string_buffer_capacity, const char* to_append);
-	CJ_API void cj_cstr_append_char(char* string_buffer, size_t string_buffer_capacity, const char to_append);
-    char* cj_substring(const char* str, u64 start, u64 end);
-    Boolean cj_cstr_equal(const char* s1, const char* s2);
-    u32 cj_cstr_index_of(const char* str, const char* sub_string);
-    char* cj_str_between_delimiters(const char* str, const char* start_delimitor, const char* end_delimitor);
-    Boolean cj_cstr_contains(const char* str, const char* contains);
+
 #endif
 
 #if defined(CJ_INCLUDE_ARENA)
@@ -368,7 +361,7 @@
         return data;
     }
 
-    void cj_memory_copy(const void* source, void* destination, size_t source_size_in_bytes, size_t destination_size_in_bytes) {
+    void cj_memory_copy(const void* source, void* destination, u64 source_size_in_bytes, u64 destination_size_in_bytes) {
         cj_assert(source);
         cj_assert(destination);
         cj_assert(source_size_in_bytes <= destination_size_in_bytes);
@@ -377,11 +370,11 @@
         }
 
         u8* temp_data_copy = (u8*)cj_alloc(source_size_in_bytes);
-        for (u32 i = 0; i < source_size_in_bytes; i++) {
+        for (u64 i = 0; i < source_size_in_bytes; i++) {
             temp_data_copy[i] = ((u8*)source)[i];
         }
 
-        for (u32 i = 0; i < source_size_in_bytes; i++) {
+        for (u64 i = 0; i < source_size_in_bytes; i++) {
             ((u8*)destination)[i] = temp_data_copy[i];
         }
 
@@ -389,12 +382,12 @@
     }
 
     void cj_memory_zero(void* data, size_t data_size_in_bytes) {
-        for (u32 i = 0; i < data_size_in_bytes; i++) {
+        for (u64 i = 0; i < data_size_in_bytes; i++) {
             ((u8*)data)[i] = 0;
         }
     }
 
-    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u32 buffer_one_size, u32 buffer_two_size) {
+    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u64 buffer_one_size, u64 buffer_two_size) {
         cj_assert(buffer_one);
         cj_assert(buffer_two);
 
@@ -404,7 +397,7 @@
 
         u8* buffer_one_data = (u8*)buffer_one;
         u8* buffer_two_data = (u8*)buffer_two;
-        for (u32 i = 0; i < buffer_one_size; i++) {
+        for (u64 i = 0; i < buffer_one_size; i++) {
             if (buffer_one_data[i] != buffer_two_data[i]) {
                 return FALSE;
             }
@@ -742,14 +735,37 @@
 #endif
 
 #if defined(CJ_IMPL_CSTRING)
-    u32 cj_cstr_length(const char* cstring) {
+    typedef struct CJ_StringView {
+        const char* ptr;
+        u64 start;
+        u64 end;
+    } CJ_StringView;
+
+    CJ_StringView cj_strview_create(char* str, u64 start, u64 end) {
+        cj_assert(str);
+        cj_assert(start >= 0);
+
+        CJ_StringView ret;
+        ret.ptr = str;
+        ret.start = start;
+        ret.end = end;
+
+        return ret;
+    }
+
+    #define CJ_SV_LIT(lit) cj_strview_create(lit, 0, sizeof(lit) - 1)
+    #define CJ_LIT_ARG(lit) lit, sizeof(lit) - 1
+    #define CJ_SV_ARG(sv) sv.ptr + sv.start, sv.end - sv.start
+    #define cJ_strview_length(sv) (sv.end - sv.start)
+
+    u64 cj_cstr_length(const char* cstring) {
         cj_assert(cstring);
 
         if (!cstring) {
             return 0; // This should never get here but the compiler want this
         }
 
-        u32 length = 0;
+        u64 length = 0;
         char* cursor = (char*)cstring;
         while(*cursor++ != '\0') {
             length++;
@@ -758,227 +774,173 @@
         return length;
     }
 
-    void cj_cstr_append(char* str, size_t str_capacity, const char* to_append) {
-        u32 str_length = cj_cstr_length(str);
-        u32 to_append_length = cj_cstr_length(to_append);
-
-        cj_assert((str_length + to_append_length) < str_capacity);
-
-        for (u32 i = 0; i < to_append_length; i++) {
-            str[str_length + i] = to_append[i];
-        }
-    }
-
-    void cj_cstr_append_char(char* str, size_t str_capacity, const char to_append) {
-        u32 str_length = cj_cstr_length(str);
-        cj_assert((str_length + 1) < str_capacity);
-        str[str_length] = to_append;
-    }
-
-    char* cj_substring(const char* str, u64 start, u64 end) {
-        cj_assert(str);
-
-        u64 str_length = cj_cstr_length(str);
-        cj_assert_msg(start < str_length, "cj_substring: Start index out of range: [0 - %llu], got: %llu\n", str_length - 1, start);
-        cj_assert_msg(end <= str_length, "cj_substring: End index out of range: [0 - %llu], got: %llu\n", str_length, end);
-        cj_assert_msg(start <= end, "cj_substring: Start index is greater than end index (start: %llu, end: %llu)\n", start, end);
-
-        u64 length = end - start;
-        char* ret = cj_alloc(length + 1);
-
-        cj_memory_copy((str + start), ret, length, length);
-        ret[length] = '\0';
-
+    char* cj_strview_to_cstr(CJ_StringView str) {
+        char* ret = cj_alloc((str.end - str.start) + 1);
+        cj_memory_copy(str.ptr + str.start, ret, str.end - str.start, (str.end - str.start) + 1);
         return ret;
     }
 
-    Boolean cj_cstr_equal(const char* s1, const char* s2) {
-        cj_assert(s1);
-        cj_assert(s2);
-
-        u32 s1_length = cj_cstr_length(s1);
-        u32 s2_length = cj_cstr_length(s2);
-
+    Boolean cj_cstr_equal(const char* s1, u64 s1_length, const char* s2, u64 s2_length) {
         return cj_memory_compare(s1, s2, s1_length, s2_length);
     }
 
-    u32 cj_cstr_index_of(const char* str, const char* sub_string) {
+    void cj_cstr_copy(char* s1, u64 s1_capacity, const char* s2, u64 s2_length) {
+        cj_memory_zero((void*)s1, s1_capacity);
+        cj_memory_copy(s2, s1, s2_length, s1_capacity);
+    }
+
+    void cj_cstr_insert(char* str, u64 str_length, u64 str_capacity, const char* to_insert, u64 to_insert_length, const u64 index) {
         cj_assert(str);
-        cj_assert(sub_string);
-        
-        size_t str_length = cj_cstr_length(str); 
-        size_t contains_length = cj_cstr_length(sub_string);
+        cj_assert(to_insert);
 
-        if (str_length == 0 && contains_length == 0) {
+        const u64 new_length = str_length + to_insert_length;
+
+        cj_assert(index >= 0 && index <= str_length);
+        cj_assert_msg(new_length < str_capacity, "string_insert: str_capacity is %llu but new valid cstring length is %llu + %llu + 1(null_term)= %llu\n", str_capacity, str_length, to_insert_length, new_length + 1);
+        u8* move_source_ptr = (u8*)(str + index);
+        u8* move_dest_ptr = (u8*)(move_source_ptr + to_insert_length);
+
+        cj_memory_copy(move_source_ptr, move_dest_ptr, str_length - index, str_capacity - (index + to_insert_length));
+        
+        u8* copy_dest_ptr = (u8*)(str + index);
+        cj_memory_copy(to_insert, copy_dest_ptr, to_insert_length, str_capacity);
+    }
+
+    void cj_cstr_insert_char(char* str, u64 str_length, u64 str_capacity, const char to_insert, const u64 index) {
+        cj_assert(str);
+        cj_assert(to_insert);
+        cj_assert(index >= 0 && index <= str_length);
+
+        u64 to_insert_length = 1;
+        Boolean expression = (str_length + to_insert_length) < str_capacity;
+        cj_assert_msg(expression, "cj_cstr_insert_char: str overflow new_capacity_required: %llu >= current_capacity: %lld\n",  str_length + to_insert_length, str_capacity);
+
+        char* source_ptr = str + index;
+        cj_memory_copy(source_ptr, source_ptr + 1, str_length - index, str_capacity - (index + 1));
+        str[index] = to_insert;
+    }
+
+    void cj_cstr_append(char* str, u64 str_length, u64 str_capacity, const char* to_append, u64 to_append_length) {
+        cj_cstr_insert(str, str_length, str_capacity, to_append, to_append_length, str_length);
+    }
+
+    void cj_cstr_append_char(char* str, u64 str_length, u64 str_capacity, const char to_append) {
+        cj_cstr_insert_char(str, str_length, str_capacity, to_append, str_length);
+    }
+
+    s64 cj_cstr_index_of(const char* str, u64 str_length, const char* substring, u64 substring_length) {
+        cj_assert(str);
+        cj_assert(substring);
+
+        if (str_length == 0 && substring_length == 0) {
             return 0;
-        } else if (contains_length == 0) {
-		    cj_assert_msg(FALSE, "Substring is empty\n");		
-            return 0; // Never gets here
+        } else if (substring_length == 0) {
+            return -1;
         } else if (str_length == 0) {
-			cj_assert_msg(FALSE, "String is empty\n");		
-            return 0; // Never gets here
+            return -1;
         }
 
-        if (contains_length > str_length) {
-        	cj_assert_msg(FALSE, "Can't find substring %s in string %s\n", sub_string, str);		
-            return 0; // Never gets here
+        if (substring_length > str_length) {
+            return -1;
         }
+
+        CJ_StringView substring_view = cj_strview_create((char*)substring, 0, substring_length);
         
-        s32 ret_index = -1;
-        for (u32 i = 0; i <= str_length - contains_length; i++) {
+        s64 ret_index = -1;
+        for (u64 i = 0; i <= str_length - substring_length; i++) {
             if (ret_index != -1) {
                 break;
             }
             
-            if (str[i] != sub_string[0]) {
+            if (str[i] != substring[0]) {
                 continue;
             }
 
-            s32 end_index = (u32)(i + contains_length);
+            u64 end_index = i + substring_length;
             if (end_index > str_length) {
                 break;
             }
 
-            char* temp_string = cj_substring((char*)str, i, end_index);
-            if (cj_cstr_equal(temp_string, sub_string)) {
+            CJ_StringView current_view = cj_strview_create((char*)str, i, end_index);
+            if (cj_cstr_equal(CJ_SV_ARG(substring_view), CJ_SV_ARG(current_view))) {
                 ret_index = i;
-            }
-            cj_free(temp_string);
-        }
-
-        if (ret_index < 0) {
-            cj_assert_msg(FALSE, "Can't find substring %s in string %s\n", sub_string, str);		
-            return 0; // Never gets here
-        }
-
-        return ret_index;
-    }
-
-    u32 cj_cstr_last_index_of(const char* str, const char* sub_string) {
-        cj_assert(str);
-        cj_assert(sub_string);
-        
-        size_t str_length = cj_cstr_length(str); 
-        size_t contains_length = cj_cstr_length(sub_string);
-
-        if (str_length == 0 && contains_length == 0) {
-            return 0;
-        } else if (contains_length == 0) {
-			cj_assert_msg(FALSE, "Substring is empty\n");		
-            return 0; // Never gets here
-        } else if (str_length == 0) {
-			cj_assert_msg(FALSE, "String is empty\n");		
-            return 0; // Never gets here
-        }
-
-        if (contains_length > str_length) {
-            cj_assert_msg(FALSE, "Can't find substring %s in string %s\n", sub_string, str);		
-            return 0; // Never gets here
-        }
-        
-        s32 ret_index = -1;
-        for (u32 i = 0; i <= str_length - contains_length; i++) {
-            if (str[i] != sub_string[0]) {
-                continue;
-            }
-
-            s32 end_index = (u32)(i + contains_length);
-            if (end_index > str_length) {
                 break;
             }
-
-            char* temp_string = cj_substring((char*)str, i, end_index);
-            if (cj_cstr_equal(temp_string, sub_string)) {
-                ret_index = i;
-            }
-            cj_free(temp_string);
         }
 
-        if (ret_index < 0) {
-            cj_assert_msg(FALSE, "Can't find substring %s in string %s\n", sub_string, str);		
-            return 0; // Never gets here
-        }
-
-        return ret_index;
+        return ret_index; // returns -1 if not found
     }
 
-    Boolean cj_cstr_contains(const char* str, const char* contains) {
+    Boolean cj_cstr_contains(const char* str, u64 str_length, const char* contains, u64 contains_length) {
         cj_assert(str);
         cj_assert(contains);
 
-        size_t str_length = cj_cstr_length(str); 
-        size_t contains_length = cj_cstr_length(contains);
+        return cj_cstr_index_of(str, str_length, contains, contains_length) != -1;
+    }
 
-        if (str_length == 0 && contains_length == 0) {
-            return TRUE;
-        } else if ((contains_length == 0) || (str_length == 0)) {
-            return FALSE;
+    s64 cj_cstr_last_index_of(const char* str, u64 str_length, const char* substring, u64 substring_length) {
+        cj_assert(str);
+        cj_assert(substring);
+
+        if (str_length == 0 && substring_length == 0) {
+            return 0;
+        } else if (substring_length == 0) {
+            return -1;
+        } else if (str_length == 0) {
+            return -1;
         }
 
-        if (contains_length > str_length) {
-            return FALSE;
+        if (substring_length > str_length) {
+            return -1;
         }
 
-        // "\0" = 0
-        // "a\0" = 0
-        // "fss\0" = 2
+        CJ_StringView substring_view = cj_strview_create((char*)str, 0, substring_length);
         
-        Boolean contains_substring = FALSE;
-        for (u32 i = 0; !contains_substring && (i <= str_length - contains_length); i++) {
-            if (str[i] != contains[0]) {
+        s64 ret_index = -1;
+        for (u64 i = 0; i <= (str_length - substring_length); i++) {
+            if (str[i] != substring[0]) {
                 continue;
             }
 
-            u32 end_index = (u32)(i + contains_length);
+            u64 end_index = i + substring_length;
             if (end_index > str_length) {
                 break;
             }
 
-            char* temp_string = cj_substring((char*)str, i, end_index);
-            if (cj_cstr_equal(temp_string, contains)) {
-                contains_substring = TRUE;
+            CJ_StringView current_view = cj_strview_create((char*)str, i, end_index);
+            if (cj_cstr_equal(CJ_SV_ARG(current_view), CJ_SV_ARG(substring_view))) {
+                ret_index = i;
             }
-            cj_free(temp_string);
         }
 
-        return contains_substring;
+        return ret_index;
     }
 
-    char* cj_cstr_between_delimiters(CJ_Arena* arena, const char* str, const char* start_delimitor, const char* end_delimitor) {
+    char* cj_cstr_between_quotes(CJ_Arena* arena, const char* str) {
         cj_assert(str);
-        cj_assert(start_delimitor);
-        cj_assert(end_delimitor);
 
-        if (!cj_cstr_contains(str, start_delimitor) || !cj_cstr_contains(str, end_delimitor)) {
+        u64 str_length = cj_cstr_length(str);
+
+        s64 start_delimitor_index = cj_cstr_index_of(str, str_length, CJ_LIT_ARG("\"")); 
+        s64 end_delimitor_index = cj_cstr_last_index_of(str, str_length, CJ_LIT_ARG("\""));
+        if (start_delimitor_index == -1 || end_delimitor_index == -1) {
             return NULLPTR;
         }
 
-        u32 start_delimitor_length = cj_cstr_length(start_delimitor);
-
-        s32 start_delimitor_index = cj_cstr_index_of(str, start_delimitor);
-        s32 end_delimitor_index = cj_cstr_index_of(str, end_delimitor); 
-
-        if (cj_cstr_equal(start_delimitor, end_delimitor)) {
-            end_delimitor_index = cj_cstr_last_index_of(str, end_delimitor);
-        }
-
-        u64 allocation_size = cj_cstr_length(str) + 1;
+        u64 allocation_size = str_length + 1;
         char* ret = MACRO_cj_arena_push(arena, allocation_size); // techinally allocating more than I need here
 
         if (start_delimitor_index == -1 || end_delimitor_index == -1) {
-            cj_free(ret);
             return NULLPTR;
-        }
-
-        if (start_delimitor_index > end_delimitor_index) {
-            cj_free(ret);
+        } else if (start_delimitor_index > end_delimitor_index) {
             return NULLPTR; // The start delimtor is after the end delimitor
         }
 
-        u32 i = start_delimitor_index + start_delimitor_length;
+        u64 i = (u64)(start_delimitor_index + 1);
 
-        while (i < (u32)end_delimitor_index) {
-            cj_cstr_append_char(ret, allocation_size, str[i++]);
+        u64 index = 0;
+        while (i < (u64)end_delimitor_index) {
+            cj_cstr_append_char(ret, index++, allocation_size, str[i++]);
         }
 
         return ret;
@@ -1187,9 +1149,9 @@
         global_intend = new_indent;
     }
 
-    internal char* generateSpaces(CJ_Arena* arena, int number_of_spaces) {
+    internal char* generateSpaces(CJ_Arena* arena, u64 number_of_spaces) {
         char* ret = MACRO_cj_arena_push(arena, (sizeof(char) * number_of_spaces) + 1);
-        for (int i = 0; i < number_of_spaces; i++) {
+        for (u64 i = 0; i < number_of_spaces; i++) {
             ret[i] = ' ';
         }
         
@@ -1226,11 +1188,14 @@
         char buffer[64];
         
         snprintf(buffer, sizeof(buffer), "%.15g", value);
-        if (!cj_cstr_index_of(buffer, ".")) {
+        u64 buffer_length = cj_cstr_length(buffer);
+
+
+        if (!cj_cstr_index_of(buffer, buffer_length, CJ_LIT_ARG("."))) {
             return 0;
         }
 
-        char* end = buffer + (cj_cstr_length(buffer) - 1);
+        char* end = buffer + (buffer_length - 1);
         int precision_count = 0;
         while (*end != '.') {
             end--;
@@ -1266,13 +1231,13 @@
 
             case CJ_TYPE_ARRAY: {
                 depth += 1;
-                int num_json = (depth - 1) * cj_cstr_length(global_intend);
-                int num_key = depth * cj_cstr_length(global_intend);
+                u64 num_json = (depth - 1) * cj_cstr_length(global_intend);
+                u64 num_key = depth * cj_cstr_length(global_intend);
 
-                int count = cj_vector_count(root->cj_json.key_value_pair_vector);
+                u64 count = cj_vector_count(root->cj_json.key_value_pair_vector);
                 char** buffers = cj_arena_push_array(arena, char*, count);
                 u64 total_allocation_size = sizeof("[\n%s]");
-                for (int i = 0; i < count; i++) {
+                for (u64 i = 0; i < count; i++) {
                     u64 allocation_size = 0;
                     JSON* new_root = root->cj_array.jsonVector[i];
                     char* value = cj_to_string_helper(arena, root->cj_array.jsonVector[i], depth);
@@ -1288,13 +1253,15 @@
                     }
                 }
 
+                u64 ret_length = 0;
                 char* ret = MACRO_cj_arena_push(arena, total_allocation_size);
-                ret[total_allocation_size - 1] = '\0';
-                cj_cstr_append(ret, total_allocation_size, "[");
+                cj_cstr_append_char(ret, ret_length++, total_allocation_size, '[');
                 for (int i = 0; i < count; i++) {
-                    cj_cstr_append(ret, total_allocation_size, buffers[i]);
+                    u64 buffer_length = cj_cstr_length(buffers[i]);
+                    cj_cstr_append(ret, ret_length, total_allocation_size, buffers[i], buffer_length);
+                    ret_length += buffer_length;
                 }
-                cj_cstr_append(ret, total_allocation_size, "\n%s]");
+                cj_cstr_append(ret, ret_length++, total_allocation_size, CJ_LIT_ARG("\n%s]"));
                 ret = cj_sprint(arena, NULLPTR, ret, generateSpaces(arena, num_json));
 
                 return ret;
@@ -1304,13 +1271,13 @@
             // TODO(Jovanni): FIX THE MEMORY LEAKS with buffers and stuff
             case CJ_TYPE_JSON: {
                 depth += 1;
-                int num_json = (depth - 1) * cj_cstr_length(global_intend);
-                int num_key = depth * cj_cstr_length(global_intend);
-                int count = cj_vector_count(root->cj_json.key_value_pair_vector);
+                u64 num_json = (depth - 1) * cj_cstr_length(global_intend);
+                u64 num_key = depth * cj_cstr_length(global_intend);
+                u64 count = cj_vector_count(root->cj_json.key_value_pair_vector);
 
                 char** buffers = cj_arena_push_array(arena, char*, count);
                 u64 total_allocation_size = sizeof("{\n\n%s}");
-                for (int i = 0; i < count; i++) {
+                for (u64 i = 0; i < count; i++) {
                     u64 allocation_size = 0;
                     JSON* new_root = root->cj_json.key_value_pair_vector[i].value;
                     char *key = root->cj_json.key_value_pair_vector[i].key;
@@ -1328,13 +1295,16 @@
                     }
                 }
 
+                u64 ret_length = 0;
                 char* ret = MACRO_cj_arena_push(arena, total_allocation_size);
-                ret[total_allocation_size - 1] = '\0';
-                cj_cstr_append(ret, total_allocation_size, "{\n");
+                cj_cstr_append(ret, ret_length, total_allocation_size, CJ_LIT_ARG("{\n"));
+                ret_length += sizeof("{\n") - 1;
                 for (int i = 0; i < count; i++) {
-                    cj_cstr_append(ret, total_allocation_size, buffers[i]);
+                    u64 buffer_length = cj_cstr_length(buffers[i]);
+                    cj_cstr_append(ret, ret_length, total_allocation_size, buffers[i], buffer_length);
+                    ret_length += buffer_length;
                 }
-                cj_cstr_append(ret, total_allocation_size, "\n%s}");
+                cj_cstr_append(ret, ret_length, total_allocation_size, CJ_LIT_ARG("\n%s}"));
                 ret = cj_sprint(NULLPTR, NULLPTR, ret, generateSpaces(arena, num_json));
 
                 return ret;
@@ -1350,7 +1320,7 @@
             #define ERR_STR "CJ: (JSON* root = null)"
             u64 allocation_size = sizeof(ERR_STR);
             char* ret = cj_alloc(allocation_size);
-            cj_cstr_append(ret, allocation_size, ERR_STR);
+            cj_cstr_append(ret, 0, allocation_size, CJ_LIT_ARG(ERR_STR));
             return ret;
         }
 
@@ -1475,8 +1445,8 @@
         lexer->source_size = 0;
     }
 
-    internal char* getScratchBuffer(CJ_Lexer* lexer) {
-        return cj_substring(lexer->source, lexer->left_pos, lexer->right_pos);
+    internal CJ_StringView getScratchBuffer(CJ_Lexer* lexer) {
+        return cj_strview_create(lexer->source, lexer->left_pos, lexer->right_pos);
     }
 
     internal CJ_TokenType getAcceptedSyntax(CJ_Lexer* lexer) {
@@ -1493,14 +1463,11 @@
         };
 
         for (int i = 0; i < ArrayCount(syntaxTokenTable); i++) {
-            char keyword = syntaxLookup[i];
-            char* buf = getScratchBuffer(lexer);
-            if (keyword == buf[0]) {
-                cj_free(buf);
+            char syntax = syntaxLookup[i];
+            CJ_StringView view = getScratchBuffer(lexer);
+            if (syntax == (view.ptr + view.start)[0]) {
                 return syntaxTokenTable[i];
             }
-
-            cj_free(buf);
         }
 
         return CJ_TOKEN_ILLEGAL_TOKEN;
@@ -1517,13 +1484,10 @@
 
         for (int i = 0; i < ArrayCount(keywords); i++) {
             char* keyword = keywords[i];
-            char* buf = getScratchBuffer(lexer);
-            if (cj_cstr_equal(keyword, buf)) {
-                cj_free(buf);
+            CJ_StringView view = getScratchBuffer(lexer);
+            if (cj_cstr_equal(keyword, cj_cstr_length(keyword), CJ_SV_ARG(view))) {
                 return keywordTokenTable[i];
             }
-
-            cj_free(buf);
         }
 
         return CJ_TOKEN_ILLEGAL_TOKEN;
@@ -1547,7 +1511,8 @@
     }
 
     internal void addToken(CJ_Lexer* lexer, CJ_TokenType type) {
-        cj_vector_push_arena(lexer->arena, lexer->tokens, cj_tokenCreate(type, getScratchBuffer(lexer), lexer->line));
+        char* lexeme = cj_strview_to_cstr(getScratchBuffer(lexer));
+        cj_vector_push_arena(lexer->arena, lexer->tokens, cj_tokenCreate(type, lexeme, lexer->line));
     }
 
     internal Boolean consumeWhitespace(CJ_Lexer* lexer) {
@@ -1563,7 +1528,8 @@
     }
 
     internal void lexer_reportError(CJ_Lexer* lexer, char* msg) {
-        printf("Lexical Error: %s | Line: %llu\n", getScratchBuffer(lexer), lexer->line);
+        char* scratch_buffer = cj_strview_to_cstr(getScratchBuffer(lexer));
+        printf("Lexical Error: %s | Line: %llu\n", scratch_buffer, lexer->line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
     }
@@ -1783,7 +1749,7 @@
             } break;
 
             case CJ_TOKEN_STRING_LITERAL: {
-                char* str_in_between_quotes = cj_cstr_between_delimiters(arena, parser->tok.lexeme, "\"", "\""); // memory leak
+                char* str_in_between_quotes = cj_cstr_between_quotes(arena, parser->tok.lexeme);
                 return JSON_STRING(arena, str_in_between_quotes);
             } break;
 
@@ -1815,7 +1781,7 @@
                         return NULLPTR;
                     }
 
-                    char* key = cj_cstr_between_delimiters(arena, parser->tok.lexeme, "\"", "\""); // memory leak
+                    char* key = cj_cstr_between_quotes(arena, parser->tok.lexeme);
                     
                     if (!parser_consumeOnMatch(parser, CJ_TOKEN_COLON)) {
                         return NULLPTR;

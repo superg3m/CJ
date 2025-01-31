@@ -1,6 +1,6 @@
 #include <cj.h>
 #include <string.h>
-#if 0
+#if 1
 int main() {
     char* indent = "    ";
     cj_set_context_indent(indent);
@@ -52,7 +52,7 @@ int main() {
 #else
     int main() {
         char src[1<<14] = {0};
-        memset(src, '[', sizeof(src)-1);
+        memset(src, '[', sizeof(src) - 1);
         
         CJ_Arena* a = cj_arena_create(0);
         

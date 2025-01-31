@@ -1677,8 +1677,8 @@
     // if you have a [] append JSON_Array
     // if you have ""
 
-    internal JSON* parseJSON(CJ_Parser* parser, CJ_Arena* arena) {
-        if (parser->current >= cj_vector_count(parser->tokens)) {
+    internal JSON* parseJSON(CJ_Parser* parser, CJ_Arena* arena, u64 depth) {
+        if (parser->current >= cj_vector_count(parser->tokens) || depth == 100) {
             return NULLPTR; // End of tokens
         }
 
@@ -1722,7 +1722,7 @@
             case CJ_TOKEN_LEFT_BRACKET: { // Parse array
                 JSON* array = cj_array_create(arena);
                 while (!parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_BRACKET)) {
-                    JSON* element = parseJSON(parser, arena);
+                    JSON* element = parseJSON(parser, arena, depth + 1);
                     if (!element) {
                         return NULLPTR;
                     }
@@ -1749,7 +1749,7 @@
                         return NULLPTR;
                     }
 
-                    JSON* value = parseJSON(parser, arena);
+                    JSON* value = parseJSON(parser, arena, depth + 1);
                     if (!value) {
                         return NULLPTR;
                     }
@@ -1792,7 +1792,7 @@
         //     }
         // }
 
-        JSON* root = parseJSON(&parser, arena);
+        JSON* root = parseJSON(&parser, arena, 0);
 
         cj_parserFree(&parser);
         cj_lexerFree(&lexer);

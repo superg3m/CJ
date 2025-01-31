@@ -13,8 +13,7 @@
 
 ## Cons (I hacked this together in 2 days so forgive my sins)
 - Not optimized at all
-- Likely has bugs, almost certainly has a memory leak of some kind...
-- Error handling is none-existant your program will likely crash on asserts if you give it malformed input.
+- Error handling is none-existant your program will likely crash on asserts if you give it malformed input. (This is being worked on)
 
 ## Getting Started
 

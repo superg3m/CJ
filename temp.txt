@@ -1,0 +1,31 @@
+{
+    "BinaryOp": {
+        "op": "+",
+        "left": {
+            "Grouping": {
+                "BinaryOp": {
+                    "op": "*",
+                    "left": 7,
+                    "right": 123
+                }
+            }
+        },
+        "right": {
+            "Grouping": {
+                "BinaryOp": {
+                    "op": "/",
+                    "left": 2,
+                    "right": {
+                        "Grouping": {
+                            "BinaryOp": {
+                                "op": "+",
+                                "left": 45.234001,
+                                "right": 5
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

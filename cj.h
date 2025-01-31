@@ -380,11 +380,18 @@
     #define cj_vector_count(vector) (vector ? (*cj_vector_header_base(vector)).count : 0)
     #define cj_vector_capacity(vector) (*cj_vector_header_base(vector)).capacity
 
-    #ifdef __cpluCJus
+    #ifdef __cplusplus
         #define cj_vector_push_arena(arena, vector, element) vector = (decltype(vector))cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++]
+        #define cj_stack_push_arena(arena, stack, element) vector = (decltype(vector))cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++]
     #else 
         #define cj_vector_push_arena(arena, vector, element) vector = cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
+        #define cj_stack_push_arena(arena, stack, element) vector = cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
     #endif
+
+    #define cj_stack_count(stack) (stack ? (*cj_vector_header_base(stack)).count : 0)
+    #define cj_stack_pop(arena, stack) stack[--cj_vector_header_base(stack)->count]
+    #define cj_stack_peek(arena, stack) stack[cj_stack_count(stack)]
+    #define cj_stack_empty(arena, stack) cj_stack_count(stack) == 0
 
     void* cj_vector_grow(void* vector, size_t element_size) {
         if (vector == NULLPTR) {
@@ -1789,13 +1796,16 @@
         parser.current = 0;
         parser.tokens = token_stream;
 
-        // JSON** states;
-        // cj_stack_push(states, root); // ensure first token is { for object
+        JSON** states = NULLPTR;
+        cj_stack_push(states, root); // ensure first token is { for object
         // while (cj_stack_empty(states) == FALSE) {
-        //     JSON* current_state = cj_stack_pop(states);
-        //     Boolean needs_to_recurse = parseJSON(arena, current_state);
-        //     if (need_to_recurse) {
-        //          cj_stack_push(states, current_state);
+        //     JSON* current_state = cj_stack_peek(states);
+        //     JSON* changeable_state = current_state;
+        //     Boolean needs_to_recurse, state_changed = parseJSON(arena, &changeable_state);
+        //     if (!need_to_recurse) {
+        //          cj_stack_pop(states, current_state);
+        //     } else if (current_state != changeable_state) { // state changed
+        //          cj_stack_push(states, changeable_state);
         //     }
         // }
 

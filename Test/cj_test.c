@@ -1,6 +1,6 @@
 #include <cj.h>
 
-#if 1
+#if 0
     int main() {
         char* indent = "    ";
         cj_set_context_indent(indent);
@@ -51,11 +51,9 @@
     }
 #else
     int main() {
-        //char src[1<<14] = {0};
-        //memset(src, '[', sizeof(src)-1);
-
-        char* src = "[]"; // This needs to error out when parsed because the top level root has to be a json object it must be
-
+        char src[1<<14] = {0};
+        memset(src, '[', sizeof(src)-1);
+        
         CJ_Arena *a = cj_arena_create(0);
         
         JSON* parsed = cj_parse(a, src);

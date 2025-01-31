@@ -1,11 +1,20 @@
 {
     "BinaryOp": {
         "op": "+",
-        "left": {
+        "": {
             "Grouping": {
                 "BinaryOp": {
                     "op": "*",
-                    "left": 7,
+                    "left": [
+                        null,
+                        false,
+                        7,
+                        23.51,
+                        true,
+                        {
+                            "test": "should_be"
+                        }
+                    ],
                     "right": 123
                 }
             }

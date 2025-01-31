@@ -1693,18 +1693,24 @@
 
     internal Boolean parseJSON(CJ_Parser* parser, CJ_Arena* arena, JSON** ret_state) {
         if (parser->current >= cj_vector_count(parser->tokens)) {
-            return NULLPTR; // End of tokens
+            *ret_state = NULLPTR;
+        }
+
+        if (parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_CURLY)) {
+            return parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
+        } else if (parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_BRACKET)) {
+            return parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
         }
 
         if ((*ret_state)->type == CJ_TYPE_JSON) {
             if (!parser_consumeOnMatch(parser, CJ_TOKEN_STRING_LITERAL)) {
-                return NULLPTR;
+                *ret_state = NULLPTR;
             }
 
             char* key = cj_cstr_between_quotes(arena, parser->tok.lexeme);
     
             if (!parser_consumeOnMatch(parser, CJ_TOKEN_COLON)) {
-             return NULLPTR;
+                *ret_state = NULLPTR;
             }
 
             JSON_KEY_VALUE pair;
@@ -1780,9 +1786,12 @@
         JSON** states = NULLPTR;
         cj_stack_push_arena(arena, states, root);
         while (cj_stack_empty(states) == FALSE) {
+            u64 stack_count = cj_stack_count(states);
             JSON* current_state = cj_stack_peek(states);
             JSON* ret_state = current_state;
             Boolean needs_to_recurse = parseJSON(&parser, arena, &ret_state);
+
+            (void)stack_count;
 
             if (ret_state == NULLPTR) { // error occured in parsing
                 return NULLPTR;
@@ -1792,15 +1801,17 @@
                 cj_stack_pop(states);
             }
 
-            if (current_state->type == CJ_TYPE_JSON) {
-                u64 count = cj_vector_count(current_state->cj_json.key_value_pair_vector);
-                current_state->cj_json.key_value_pair_vector[count - 1].value = ret_state;
-            } else if (current_state->type == CJ_TYPE_ARRAY) {
-                cj_array_push(current_state, ret_state);
-            }
-
-            if (ret_state->type == CJ_TYPE_JSON || ret_state->type == CJ_TYPE_ARRAY) {
-                cj_stack_push_arena(arena, states, ret_state);
+            if (current_state != ret_state) {
+                if (current_state->type == CJ_TYPE_JSON) {
+                    u64 count = cj_vector_count(current_state->cj_json.key_value_pair_vector);
+                    current_state->cj_json.key_value_pair_vector[count - 1].value = ret_state;
+                } else if (current_state->type == CJ_TYPE_ARRAY) {
+                    cj_array_push(current_state, ret_state);
+                }
+                
+                if (ret_state->type == CJ_TYPE_JSON || ret_state->type == CJ_TYPE_ARRAY) {
+                    cj_stack_push_arena(arena, states, ret_state);
+                }
             }
         }
 

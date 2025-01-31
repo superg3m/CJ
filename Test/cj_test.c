@@ -59,6 +59,7 @@
         JSON* parsed = cj_parse(a, src);
         char* formatted = cj_to_string(parsed);
         printf("%s\n", formatted);
+        free(formatted);
 
         cj_arena_free(a);
     }

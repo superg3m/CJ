@@ -25,7 +25,7 @@ if compiler_name == "cl":
     compiler_disable_specific_warnings = ["5105", "4668", "4820", "4996"]
 elif compiler_name in ["gcc", "cc", "clang"]:
     compiler_warning_level = "all"
-    compiler_disable_specific_warnings = ["deprecated", "parentheses", "unreachable-code-generic-assoc"]
+    compiler_disable_specific_warnings = ["deprecated", "parentheses", "unreachable-code-generic-assoc", "switch"]
 
 # f"../ckg/build_{compiler_name}/{C_BUILD_LIB("ckg", compiler_name)}"
 libs = []

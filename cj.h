@@ -244,38 +244,7 @@
 
     void* cj_alloc(u64 allocation_size);
     void* MACRO_cj_free(void* data);
-    void* cj_realloc(void* data, u64 old_allocation_size, u64 new_allocation_size);
-
-    CJ_API void cj_memory_copy(const void* source, void* destination, u64 source_size_in_bytes, u64 destination_size_in_bytes);
-    CJ_API void cj_memory_zero(void* data, u64 data_size_in_bytes);
-
-    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u64 buffer_one_size, u64 buffer_two_size);
-
     #define cj_free(data) data = MACRO_cj_free(data)
-
-    void* cj_alloc(u64 allocation_size) {
-        cj_assert(allocation_size != 0);
-
-        void* ret = malloc(allocation_size);
-        cj_memory_zero(ret, allocation_size);
-        return ret;
-    }
-
-    void* cj_realloc(void* data, u64 old_allocation_size, u64 new_allocation_size) {
-        cj_assert(old_allocation_size != 0);
-        cj_assert(new_allocation_size != 0);
-
-        void* ret = cj_alloc(new_allocation_size);
-        cj_memory_copy(data, ret, old_allocation_size, new_allocation_size);
-        cj_free(data);
-        return ret;
-    }
-
-    void* MACRO_cj_free(void* data) {
-        free(data);
-        data = NULLPTR;
-        return data;
-    }
 
     void cj_memory_copy(const void* source, void* destination, u64 source_size_in_bytes, u64 destination_size_in_bytes) {
         cj_assert(source);
@@ -320,6 +289,30 @@
         }
 
         return TRUE;
+    }
+
+    void* cj_alloc(u64 allocation_size) {
+        cj_assert(allocation_size != 0);
+
+        void* ret = malloc(allocation_size);
+        cj_memory_zero(ret, allocation_size);
+        return ret;
+    }
+
+    void* cj_realloc(void* data, u64 old_allocation_size, u64 new_allocation_size) {
+        cj_assert(old_allocation_size != 0);
+        cj_assert(new_allocation_size != 0);
+
+        void* ret = cj_alloc(new_allocation_size);
+        cj_memory_copy(data, ret, old_allocation_size, new_allocation_size);
+        cj_free(data);
+        return ret;
+    }
+
+    void* MACRO_cj_free(void* data) {
+        free(data);
+        data = NULLPTR;
+        return data;
     }
 #endif
 
@@ -1630,8 +1623,6 @@
         CJ_Arena* arena_allocator;
     } CJ_Parser;
 
-    CJ_Parser cj_parserCreate();
-
     CJ_Parser cj_parserCreate(CJ_Token* token_stream) {
         CJ_Parser ret;
         ret.tokens = token_stream;
@@ -1798,7 +1789,8 @@
             }
 
             if (!needs_to_recurse) {
-                cj_stack_pop(states);
+                JSON* unused = cj_stack_pop(states);
+                (void)unused;
             }
 
             if (current_state != ret_state) {

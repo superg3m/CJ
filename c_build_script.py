@@ -12,11 +12,11 @@ compiler_warning_level = ""
 compiler_disable_specific_warnings = []
 compiler_treat_warnings_as_errors = True
 compiler_disable_warnings = False
-compiler_disable_sanitizer = True
+compiler_disable_sanitizer = False
 
 project_name = "CJ"
 project_dependencies = [""]
-project_rebuild_project_dependencies = False
+project_rebuild_project_dependencies = True
 project_debug_with_visual_studio = False
 project_executable_procedures = ["cj_test.exe"]
 

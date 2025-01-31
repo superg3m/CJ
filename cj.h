@@ -1677,8 +1677,9 @@
     // if you have a [] append JSON_Array
     // if you have ""
 
+    # define MAX_JSON_DEPTH 1000
     internal JSON* parseJSON(CJ_Parser* parser, CJ_Arena* arena, u64 depth) {
-        if (parser->current >= cj_vector_count(parser->tokens) || depth == 100) {
+        if (parser->current >= cj_vector_count(parser->tokens) || depth == MAX_JSON_DEPTH) {
             return NULLPTR; // End of tokens
         }
 

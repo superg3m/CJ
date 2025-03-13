@@ -1,6 +1,6 @@
 #include <cj.h>
 #include <string.h>
-#if 0
+#if 1
     int main() {
         char* indent = "    ";
         cj_set_context_indent(indent);

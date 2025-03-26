@@ -1777,12 +1777,9 @@
         JSON** states = NULLPTR;
         cj_stack_push_arena(arena, states, root);
         while (cj_stack_empty(states) == FALSE) {
-            u64 stack_count = cj_stack_count(states);
             JSON* current_state = cj_stack_peek(states);
             JSON* ret_state = current_state;
             Boolean needs_to_recurse = parseJSON(&parser, arena, &ret_state);
-
-            (void)stack_count;
 
             if (ret_state == NULLPTR) { // error occured in parsing
                 return NULLPTR;

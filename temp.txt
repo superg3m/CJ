@@ -1,0 +1,40 @@
+{
+    "BinaryOp": {
+        "op": "+",
+        "": {
+            "Grouping": {
+                "BinaryOp": {
+                    "op": "*",
+                    "left": [
+                        null,
+                        false,
+                        7,
+                        23.51,
+                        true,
+                        {
+                            "test": "should_be"
+                        }
+                    ],
+                    "right": 123
+                }
+            }
+        },
+        "right": {
+            "Grouping": {
+                "BinaryOp": {
+                    "op": "/",
+                    "left": 2,
+                    "right": {
+                        "Grouping": {
+                            "BinaryOp": {
+                                "op": "+",
+                                "left": 45.234001,
+                                "right": 5
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

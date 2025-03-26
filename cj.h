@@ -373,11 +373,18 @@
     #define cj_vector_count(vector) (vector ? (*cj_vector_header_base(vector)).count : 0)
     #define cj_vector_capacity(vector) (*cj_vector_header_base(vector)).capacity
 
-    #ifdef __cpluCJus
+    #ifdef __cplusplus
         #define cj_vector_push_arena(arena, vector, element) vector = (decltype(vector))cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++]
+        #define cj_stack_push_arena(arena, stack, element) stack = (decltype(stack))cj_vector_grow_with_arena(arena, stack, sizeof(element)); vector[cj_vector_header_base(stack)->count++]
     #else 
         #define cj_vector_push_arena(arena, vector, element) vector = cj_vector_grow_with_arena(arena, vector, sizeof(element)); vector[cj_vector_header_base(vector)->count++] = element
+        #define cj_stack_push_arena(arena, stack, element) stack = cj_vector_grow_with_arena(arena, stack, sizeof(element)); stack[cj_vector_header_base(stack)->count++] = element
     #endif
+
+    #define cj_stack_count(stack) (stack ? (*cj_vector_header_base(stack)).count : 0)
+    #define cj_stack_pop(stack) stack[--cj_vector_header_base(stack)->count]
+    #define cj_stack_peek(stack) stack[cj_stack_count(stack) - 1]
+    #define cj_stack_empty(stack) (cj_stack_count(stack) == 0)
 
     void* cj_vector_grow(void* vector, size_t element_size) {
         if (vector == NULLPTR) {
@@ -1616,11 +1623,9 @@
         CJ_Arena* arena_allocator;
     } CJ_Parser;
 
-    CJ_Parser cj_parserCreate();
-
-    CJ_Parser cj_parserCreate() {
+    CJ_Parser cj_parserCreate(CJ_Token* token_stream) {
         CJ_Parser ret;
-        ret.tokens = NULLPTR;
+        ret.tokens = token_stream;
         ret.current = 0;
         ret.arena_allocator = cj_arena_create(KiloBytes(2));
 
@@ -1677,123 +1682,130 @@
     // if you have a [] append JSON_Array
     // if you have ""
 
-    # define MAX_JSON_DEPTH 1000
-    internal JSON* parseJSON(CJ_Parser* parser, CJ_Arena* arena, u64 depth) {
-        if (parser->current >= cj_vector_count(parser->tokens) || depth == MAX_JSON_DEPTH) {
-            return NULLPTR; // End of tokens
+    internal Boolean parseJSON(CJ_Parser* parser, CJ_Arena* arena, JSON** ret_state) {
+        if (parser->current >= cj_vector_count(parser->tokens)) {
+            *ret_state = NULLPTR;
+        }
+
+        if (parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_CURLY)) {
+            return parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
+        } else if (parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_BRACKET)) {
+            return parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
+        }
+
+        if ((*ret_state)->type == CJ_TYPE_JSON) {
+            if (!parser_consumeOnMatch(parser, CJ_TOKEN_STRING_LITERAL)) {
+                *ret_state = NULLPTR;
+            }
+
+            char* key = cj_cstr_between_quotes(arena, parser->tok.lexeme);
+    
+            if (!parser_consumeOnMatch(parser, CJ_TOKEN_COLON)) {
+                *ret_state = NULLPTR;
+            }
+
+            JSON_KEY_VALUE pair;
+            pair.key = key;
+            pair.value = NULLPTR;
+            cj_vector_push_arena(arena, (*ret_state)->cj_json.key_value_pair_vector, pair);
         }
 
         parser_consumeNextToken(parser);
 
         switch (parser->tok.type) {
             case CJ_TOKEN_TRUE: {
-                return JSON_BOOL(arena, TRUE);
+                *ret_state = JSON_BOOL(arena, TRUE);
             } break;
 
             case CJ_TOKEN_FALSE: {
-                return JSON_BOOL(arena, FALSE);
+                *ret_state = JSON_BOOL(arena, FALSE);
             } break;
 
             case CJ_TOKEN_MINUS: {
                 parser_consumeNextToken(parser);
                 if (parser->tok.type == CJ_TOKEN_INTEGER_LITERAL) {
-                    return JSON_INT(arena, atoi(parser->tok.lexeme));
+                    *ret_state = JSON_INT(arena, atoi(parser->tok.lexeme));
                 } else if (parser->tok.type == CJ_TOKEN_FLOAT_LITERAL) {
-                    return JSON_FLOAT(arena, atof(parser->tok.lexeme));
+                    *ret_state = JSON_FLOAT(arena, atof(parser->tok.lexeme));
                 }
             } break;
             
             case CJ_TOKEN_INTEGER_LITERAL: {
-                return JSON_INT(arena, atoi(parser->tok.lexeme));
+                *ret_state = JSON_INT(arena, atoi(parser->tok.lexeme));
             } break;
 
             case CJ_TOKEN_FLOAT_LITERAL: {
-                return JSON_FLOAT(arena, atof(parser->tok.lexeme));
+                *ret_state = JSON_FLOAT(arena, atof(parser->tok.lexeme));
             } break;
 
             case CJ_TOKEN_STRING_LITERAL: {
                 char* str_in_between_quotes = cj_cstr_between_quotes(arena, parser->tok.lexeme);
-                return JSON_STRING(arena, str_in_between_quotes);
+                *ret_state = JSON_STRING(arena, str_in_between_quotes);
             } break;
 
             case CJ_TOKEN_NULL: {
-                return JSON_NULL(arena);
+                *ret_state = JSON_NULL(arena);
             } break;
 
             case CJ_TOKEN_LEFT_BRACKET: { // Parse array
-                JSON* array = cj_array_create(arena);
-                while (!parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_BRACKET)) {
-                    JSON* element = parseJSON(parser, arena, depth + 1);
-                    if (!element) {
-                        return NULLPTR;
-                    }
-
-                    cj_vector_push_arena(arena, array->cj_array.jsonVector, element);
-
-                    parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
-                }
-
-                return array;
+                *ret_state = cj_array_create(arena);
+                return TRUE;
             } break;
 
             case CJ_TOKEN_LEFT_CURLY: { // Parse object
-                JSON* jsonObject = cj_create(arena);
-
-                while (!parser_consumeOnMatch(parser, CJ_TOKEN_RIGHT_CURLY)) {
-                    if (!parser_consumeOnMatch(parser, CJ_TOKEN_STRING_LITERAL)) {
-                        return NULLPTR;
-                    }
-
-                    char* key = cj_cstr_between_quotes(arena, parser->tok.lexeme);
-                    
-                    if (!parser_consumeOnMatch(parser, CJ_TOKEN_COLON)) {
-                        return NULLPTR;
-                    }
-
-                    JSON* value = parseJSON(parser, arena, depth + 1);
-                    if (!value) {
-                        return NULLPTR;
-                    }
-
-                    JSON_KEY_VALUE pair;
-                    pair.key = key;
-                    pair.value = value;
-
-                    cj_vector_push_arena(arena, jsonObject->cj_json.key_value_pair_vector, pair);
-
-                    parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
-                }
-
-                return jsonObject;
-            } break;
-
-            default: {
-                return NULLPTR; 
+                *ret_state = cj_create(arena);
+                return TRUE;
             } break;
         }
 
-        return NULLPTR;
+        return parser_consumeOnMatch(parser, CJ_TOKEN_COMMA);
     }
 
     JSON* cj_parse(CJ_Arena* arena, char* json_buffer) {
         CJ_Lexer lexer = cj_lexerCreate(arena);
         CJ_Token* token_stream = lexerGenerateTokenStream(&lexer, json_buffer, cj_cstr_length(json_buffer));
+        CJ_Parser parser = cj_parserCreate(token_stream);
+        if (!parser_consumeOnMatch(&parser, CJ_TOKEN_LEFT_CURLY)) {
+            return NULLPTR;
+        }
 
-        CJ_Parser parser = cj_parserCreate();
-        parser.current = 0;
-        parser.tokens = token_stream;
+        JSON* root = cj_create(arena);
+        if (parser_consumeOnMatch(&parser, CJ_TOKEN_RIGHT_CURLY)) {
+            return root;
+        }
 
-        // JSON** states;
-        // cj_stack_push(states, root); // ensure first token is { for object
-        // while (cj_stack_empty(states) == FALSE) {
-        //     JSON* current_state = cj_stack_pop(states);
-        //     Boolean needs_to_recurse = parseJSON(arena, current_state);
-        //     if (need_to_recurse) {
-        //          cj_stack_push(states, current_state);
-        //     }
-        // }
+        JSON** states = NULLPTR;
+        cj_stack_push_arena(arena, states, root);
+        while (cj_stack_empty(states) == FALSE) {
+            u64 stack_count = cj_stack_count(states);
+            JSON* current_state = cj_stack_peek(states);
+            JSON* ret_state = current_state;
+            Boolean needs_to_recurse = parseJSON(&parser, arena, &ret_state);
 
-        JSON* root = parseJSON(&parser, arena, 0);
+            (void)stack_count;
+
+            if (ret_state == NULLPTR) { // error occured in parsing
+                return NULLPTR;
+            }
+
+            if (!needs_to_recurse) {
+                JSON* unused = cj_stack_pop(states);
+                (void)unused;
+            }
+
+            if (current_state != ret_state) {
+                if (current_state->type == CJ_TYPE_JSON) {
+                    u64 count = cj_vector_count(current_state->cj_json.key_value_pair_vector);
+                    current_state->cj_json.key_value_pair_vector[count - 1].value = ret_state;
+                } else if (current_state->type == CJ_TYPE_ARRAY) {
+                    cj_array_push(current_state, ret_state);
+                }
+                
+                if (ret_state->type == CJ_TYPE_JSON || ret_state->type == CJ_TYPE_ARRAY) {
+                    cj_stack_push_arena(arena, states, ret_state);
+                }
+            }
+        }
 
         cj_parserFree(&parser);
         cj_lexerFree(&lexer);

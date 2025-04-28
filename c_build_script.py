@@ -26,7 +26,7 @@ pc: ProjectConfig = ProjectConfig(
     project_dependencies = [""],
     project_debug_with_visual_studio = True,
     project_rebuild_project_dependencies = False,
-    project_executable_procedures  = ["cj_test.exe"]
+    project_executable_names = ["cj_test.exe"]
 )
 
 cc: CompilerConfig = CompilerConfig(
@@ -60,13 +60,11 @@ if IS_WINDOWS():
 	libs += windows_libs
 
 procedures_config = {
-    "cj_test executable": ProcedureConfigElement(
+    "cj_test executable": ProcedureConfig(
         build_directory = f"./build_{cc.compiler_name}",
         output_name = f"cj_test.exe",
         source_files = ["../cj.c", "../Test/cj_test.c"],
         additional_libs = libs,
-        compile_time_defines = [],
-        compiler_inject_into_args = [],
         include_paths = [
             "../",
         ],

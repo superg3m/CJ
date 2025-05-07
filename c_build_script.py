@@ -51,7 +51,7 @@ if cc.compiler_name == "cl":
     cc.compiler_disable_specific_warnings = ["5105", "4668", "4820", "4996"]
 else:
     cc.compiler_warning_level = "all"
-    cc.compiler_disable_specific_warnings = ["deprecated", "parentheses", "unreachable-code-generic-assoc"]
+    cc.compiler_disable_specific_warnings = ["deprecated", "parentheses", "switch"]
     
 libs = []
 if IS_WINDOWS():

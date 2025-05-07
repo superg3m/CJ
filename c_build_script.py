@@ -55,17 +55,18 @@ else:
     
 libs = []
 if IS_WINDOWS():
-	windows_libs = ["User32.lib", "Gdi32.lib"] if cc.compiler_name == "cl" else ["-lUser32", "-lGdi32"]
+	windows_libs = [GET_LIB_FLAG(cc, "User32"), GET_LIB_FLAG(cc, "Gdi32")]
 	libs += windows_libs
 
+build_postfix = f"build_{cc.compiler_name}/{C_BUILD_BUILD_TYPE()}"
 procedures_config = {
     "cj_test executable": ProcedureConfig(
-        build_directory = f"./build_{cc.compiler_name}",
+        build_directory = f"./{build_postfix}",
         output_name = f"cj_test.exe",
-        source_files = ["../cj.c", "../Test/cj_test.c"],
+        source_files = ["../../cj.c", "../../Test/cj_test.c"],
         additional_libs = libs,
         include_paths = [
-            "../",
+            "../..",
         ],
     ),
 }

@@ -33,6 +33,34 @@
 #define CJ_INCLUDE_PARSING
 
 #if defined(CJ_INCLUDE_TYPES)
+    #undef FALSE
+    #undef TRUE
+    #undef NULLPTR
+    #undef PI
+    #undef stringify
+    #undef glue
+    #undef KiloBytes
+    #undef MegaBytes
+    #undef GigaBytes
+    #undef MIN
+    #undef MAX
+    #undef CLAMP
+    #undef local_persist
+    #undef internal
+    #undef OFFSET_OF
+    #undef FIRST_DIGIT
+    #undef GET_BIT
+    #undef SET_BIT
+    #undef UNSET_BIT
+    #undef ArrayCount
+    #undef PLATFORM_MAX_PATH
+    #undef PLATFORM_WINDOWS
+    #undef PLATFORM_APPLE
+    #undef PLATFORM_LINUX
+    #undef OS_DELIMITER
+    #undef CRASH
+    #undef UNUSED_FUNCTION
+
     #include <stdint.h>
     #include <stdio.h>
     #include <stdarg.h>

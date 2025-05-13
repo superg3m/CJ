@@ -1260,15 +1260,18 @@
                 }
 
                 u64 ret_length = 0;
-                char* ret = MACRO_cj_arena_push(arena, total_allocation_size);
+                u64 spaces_allocation_size = 0;
+                char* end_spaces = cj_sprint(NULL, &spaces_allocation_size, "\n%s]", generateSpaces(arena, num_json));
+                total_allocation_size += spaces_allocation_size;
+                char* ret = cj_alloc(total_allocation_size);
                 cj_cstr_append_char(ret, ret_length++, total_allocation_size, '[');
                 for (int i = 0; i < count; i++) {
                     u64 buffer_length = cj_cstr_length(buffers[i]);
                     cj_cstr_append(ret, ret_length, total_allocation_size, buffers[i], buffer_length);
                     ret_length += buffer_length;
                 }
-                cj_cstr_append(ret, ret_length++, total_allocation_size, CJ_LIT_ARG("\n%s]"));
-                ret = cj_sprint(arena, NULLPTR, ret, generateSpaces(arena, num_json));
+
+                cj_cstr_append(ret, ret_length, total_allocation_size, end_spaces, spaces_allocation_size);
 
                 return ret;
             } break;
@@ -1302,7 +1305,10 @@
                 }
 
                 u64 ret_length = 0;
-                char* ret = MACRO_cj_arena_push(arena, total_allocation_size);
+                u64 spaces_allocation_size = 0;
+                char* end_spaces = cj_sprint(NULL, &spaces_allocation_size, "\n%s}", generateSpaces(arena, num_json));
+                total_allocation_size += spaces_allocation_size;
+                char* ret = cj_alloc(total_allocation_size);
                 cj_cstr_append(ret, ret_length, total_allocation_size, CJ_LIT_ARG("{\n"));
                 ret_length += sizeof("{\n") - 1;
                 for (int i = 0; i < count; i++) {
@@ -1310,8 +1316,8 @@
                     cj_cstr_append(ret, ret_length, total_allocation_size, buffers[i], buffer_length);
                     ret_length += buffer_length;
                 }
-                cj_cstr_append(ret, ret_length, total_allocation_size, CJ_LIT_ARG("\n%s}"));
-                ret = cj_sprint(NULLPTR, NULLPTR, ret, generateSpaces(arena, num_json));
+
+                cj_cstr_append(ret, ret_length, total_allocation_size, end_spaces, spaces_allocation_size);
 
                 return ret;
             } break;

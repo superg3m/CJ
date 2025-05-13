@@ -27,6 +27,7 @@
 #define CJ_INCLUDE_TYPES
 #define CJ_INCLUDE_OS
 #define CJ_INCLUDE_ARENA
+#define CJ_INCLUDE_CSTRING
 #define CJ_INCLUDE_CREATION
 #define CJ_INCLUDE_FORMATTED_BUFFER
 #define CJ_INCLUDE_PARSING
@@ -133,6 +134,14 @@
     #define cj_arena_push_array(arena, type, element_count) ((type*)MACRO_cj_arena_push(arena, sizeof(type) * element_count))
 #endif
 
+#if defined(CJ_INCLUDE_CSTRING)
+    typedef struct CJ_StringView {
+        const char* ptr;
+        u64 start;
+        u64 end;
+    } CJ_StringView;
+#endif
+
 #if defined(CJ_INCLUDE_CREATION)
     typedef struct JSON JSON;
 
@@ -163,7 +172,7 @@
         CJ_Type type;
         union {
             Boolean cj_bool;
-            char* cj_string;
+            CJ_StringView cj_string;
             double cj_float;
             int cj_int; 
             char* cj_null; // "null\0"
@@ -182,6 +191,7 @@
     JSON* JSON_INT(CJ_Arena* arena, int value);
     JSON* JSON_FLOAT(CJ_Arena* arena, double value);
     JSON* JSON_STRING(CJ_Arena* arena, char* value);
+    JSON* JSON_STRING_VIEW(CJ_Arena* arena, CJ_StringView value); 
     JSON* JSON_BOOL(CJ_Arena* arena, Boolean value);
     JSON* JSON_JSON(CJ_Arena* arena, JSON* json);
     JSON* JSON_NULL(CJ_Arena* arena);
@@ -190,11 +200,12 @@
         Boolean: JSON_BOOL,                \
         char[sizeof(value)]: JSON_STRING,              \
         const char[sizeof(value)]: JSON_STRING,              \
-        char*: JSON_STRING,               \
-        const char*: JSON_STRING,         \
+        char*: JSON_STRING,                \
+        const char*: JSON_STRING,          \
+        CJ_StringView: JSON_STRING_VIEW,    \
         double: JSON_FLOAT,                \
-        int: JSON_INT,                    \
-        JSON*: JSON_JSON                 \
+        int: JSON_INT,                     \
+        JSON*: JSON_JSON                   \
     )(root->arena, value))
 
 
@@ -698,12 +709,6 @@
 #endif
 
 #if defined(CJ_IMPL_CSTRING)
-    typedef struct CJ_StringView {
-        const char* ptr;
-        u64 start;
-        u64 end;
-    } CJ_StringView;
-
     CJ_StringView cj_strview_create(char* str, u64 start, u64 end) {
         cj_assert(str);
         cj_assert(start >= 0);
@@ -1076,7 +1081,17 @@
         return ret;
     }
 
-    JSON* JSON_STRING(CJ_Arena* arena,char* value) {
+    JSON* JSON_STRING(CJ_Arena* arena, char* value) {
+        JSON* ret = cj_create(arena);
+        ret->type = CJ_TYPE_STRING;
+        ret->cj_string.ptr = value;
+        ret->cj_string.start = 0;
+        ret->cj_string.end = cj_cstr_length(value);
+
+        return ret;
+    }
+
+    JSON* JSON_STRING_VIEW(CJ_Arena* arena, CJ_StringView value) {
         JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_STRING;
         ret->cj_string = value;
@@ -1185,7 +1200,7 @@
             } break;
 
             case CJ_TYPE_STRING: {
-                return cj_sprint(arena, NULLPTR, "\"%s\"",  root->cj_string);    
+                return cj_sprint(arena, NULLPTR, "\"%.*s\"",  root->cj_string.start - root->cj_string.end, root->cj_string.ptr);    
             } break;
             
             case CJ_TYPE_NULL: {

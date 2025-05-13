@@ -12,7 +12,7 @@
 
         JSON* nested = cj_create(arena);
         cj_push(nested, "address1", "San Francisco");
-        cj_push(nested, "address2", "California");
+        cj_push(nested, "address2", ((CJ_StringView){"Californialjlkjklkljkljljklkjkl", 0, 10}));
 
         JSON* nested_twice = cj_create(arena);
         cj_push(nested_twice, "KylE", (Boolean)TRUE);

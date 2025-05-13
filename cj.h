@@ -234,7 +234,7 @@
         double: JSON_FLOAT,                \
         int: JSON_INT,                     \
         JSON*: JSON_JSON                   \
-    )(root->arena, (value)))
+    )(root->arena, value))
 
 
     #define cj_array_push(root, value) MACRO_cj_array_push(root, _Generic((value),  \

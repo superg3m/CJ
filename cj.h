@@ -1228,7 +1228,7 @@
             } break;
 
             case CJ_TYPE_STRING: {
-                return cj_sprint(arena, NULLPTR, "\"%.*s\"",  root->cj_string.start - root->cj_string.end, root->cj_string.ptr);    
+                return cj_sprint(arena, NULLPTR, "\"%.*s\"", root->cj_string.end - root->cj_string.start, root->cj_string.ptr);    
             } break;
             
             case CJ_TYPE_NULL: {

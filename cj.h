@@ -1211,6 +1211,30 @@
         return precision_count;
     }
 
+    internal char* cj_format_json_with_indent(size_t total_allocation_size, CJ_Arena* arena, u64 num_json, char delimitor_left, char delimitor_right, char** buffers, u64 count) {
+        u64 ret_length = 0;
+        u64 spaces_allocation_size = 0;
+
+        char* end_spaces = cj_sprint(NULL, &spaces_allocation_size, "\n%s%c", generateSpaces(arena, num_json), delimitor_right);
+        total_allocation_size += spaces_allocation_size;
+
+        char* ret = cj_alloc(total_allocation_size);
+        cj_cstr_append_char(ret, ret_length++, total_allocation_size, delimitor_left);
+        if (delimitor_left == '{') {
+            cj_cstr_append_char(ret, ret_length++, total_allocation_size, '\n');
+        }
+
+        for (int i = 0; i < count; i++) {
+            u64 buffer_length = cj_cstr_length(buffers[i]);
+            cj_cstr_append(ret, ret_length, total_allocation_size, buffers[i], buffer_length);
+            ret_length += buffer_length;
+        }
+
+        cj_cstr_append(ret, ret_length, total_allocation_size, end_spaces, spaces_allocation_size);
+ 
+        return ret;
+    }
+
     internal char* cj_to_string_helper(CJ_Arena* arena, JSON* root, int depth) {
         switch (root->type) {
             case CJ_TYPE_BOOL: {
@@ -1259,21 +1283,7 @@
                     }
                 }
 
-                u64 ret_length = 0;
-                u64 spaces_allocation_size = 0;
-                char* end_spaces = cj_sprint(NULL, &spaces_allocation_size, "\n%s]", generateSpaces(arena, num_json));
-                total_allocation_size += spaces_allocation_size;
-                char* ret = cj_alloc(total_allocation_size);
-                cj_cstr_append_char(ret, ret_length++, total_allocation_size, '[');
-                for (int i = 0; i < count; i++) {
-                    u64 buffer_length = cj_cstr_length(buffers[i]);
-                    cj_cstr_append(ret, ret_length, total_allocation_size, buffers[i], buffer_length);
-                    ret_length += buffer_length;
-                }
-
-                cj_cstr_append(ret, ret_length, total_allocation_size, end_spaces, spaces_allocation_size);
-
-                return ret;
+                return cj_format_json_with_indent(total_allocation_size, arena, num_json, '[', ']', buffers, count);
             } break;
 
             // Date: January 23, 2025
@@ -1306,20 +1316,8 @@
 
                 u64 ret_length = 0;
                 u64 spaces_allocation_size = 0;
-                char* end_spaces = cj_sprint(NULL, &spaces_allocation_size, "\n%s}", generateSpaces(arena, num_json));
-                total_allocation_size += spaces_allocation_size;
-                char* ret = cj_alloc(total_allocation_size);
-                cj_cstr_append(ret, ret_length, total_allocation_size, CJ_LIT_ARG("{\n"));
-                ret_length += sizeof("{\n") - 1;
-                for (int i = 0; i < count; i++) {
-                    u64 buffer_length = cj_cstr_length(buffers[i]);
-                    cj_cstr_append(ret, ret_length, total_allocation_size, buffers[i], buffer_length);
-                    ret_length += buffer_length;
-                }
 
-                cj_cstr_append(ret, ret_length, total_allocation_size, end_spaces, spaces_allocation_size);
-
-                return ret;
+                return cj_format_json_with_indent(total_allocation_size, arena, num_json, '{', '}', buffers, count);
             } break;
 
         }

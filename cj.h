@@ -1687,7 +1687,7 @@
     }
 
     internal void parser_reportError(CJ_Parser* parser, char* msg) {
-        printf("CJ_Parser Error: %s | Line: %llu\n", parser_peekNthToken(parser, 0).lexeme, parser_peekNthToken(parser, 0).line);
+        printf("CJ_Parser Error: %s | Line: %d\n", parser_peekNthToken(parser, 0).lexeme, (int)parser_peekNthToken(parser, 0).line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
     }

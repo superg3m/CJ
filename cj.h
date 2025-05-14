@@ -809,7 +809,7 @@
 
         u64 to_insert_length = 1;
         Boolean expression = (str_length + to_insert_length) < str_capacity;
-        cj_assert_msg(expression, "cj_cstr_insert_char: str overflow new_capacity_required: %llu >= current_capacity: %lld\n",  str_length + to_insert_length, str_capacity);
+        cj_assert_msg(expression, "cj_cstr_insert_char: str overflow new_capacity_required: %d >= current_capacity: %d\n",  (int)str_length + (int)to_insert_length, (int)str_capacity);
 
         char* source_ptr = str + index;
         cj_memory_copy(source_ptr, source_ptr + 1, str_length - index, str_capacity - (index + 1));

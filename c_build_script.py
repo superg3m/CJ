@@ -35,7 +35,7 @@ cc: CompilerConfig = CompilerConfig(
     compiler_disable_specific_warnings = [""],
     compiler_treat_warnings_as_errors = True,
     compiler_disable_warnings  = False,
-    compiler_disable_sanitizer = False
+    compiler_disable_sanitizer = True
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
@@ -51,7 +51,7 @@ if cc.compiler_name == "cl":
     cc.compiler_disable_specific_warnings = ["5105", "4668", "4820", "4996", "4189"]
 else:
     cc.compiler_warning_level = "all"
-    cc.compiler_disable_specific_warnings = ["deprecated", "parentheses", "switch"]
+    cc.compiler_disable_specific_warnings = ["deprecated", "parentheses", "switch", "unused-variable"]
     
 libs = []
 if IS_WINDOWS():

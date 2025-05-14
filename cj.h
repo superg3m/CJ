@@ -792,7 +792,7 @@
         const u64 new_length = str_length + to_insert_length;
 
         cj_assert(index >= 0 && index <= str_length);
-        cj_assert_msg(new_length < str_capacity, "string_insert: str_capacity is %llu but new valid cstring length is %llu + %llu + 1(null_term)= %llu\n", str_capacity, str_length, to_insert_length, new_length + 1);
+        cj_assert_msg(new_length < str_capacity, "string_insert: str_capacity is %d but new valid cstring length is %d + %d + 1(null_term)= %d\n", (int)str_capacity, (int)str_length, (int)to_insert_length, (int)new_length + 1);
         u8* move_source_ptr = (u8*)(str + index);
         u8* move_dest_ptr = (u8*)(move_source_ptr + to_insert_length);
 

@@ -1539,7 +1539,7 @@
 
     internal void lexer_reportError(CJ_Lexer* lexer, char* msg) {
         char* scratch_buffer = cj_strview_to_cstr(getScratchBuffer(lexer));
-        printf("Lexical Error: %s | Line: %llu\n", scratch_buffer, lexer->line);
+        printf("Lexical Error: %s | Line: %d\n", scratch_buffer, (int)lexer->line);
         printf("Msg: %s\n", msg);
         cj_assert(FALSE);
     }

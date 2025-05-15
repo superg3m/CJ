@@ -1541,7 +1541,7 @@
         char* scratch_buffer = cj_strview_to_cstr(getScratchBuffer(lexer));
         printf("Lexical Error: %s | Line: %d\n", scratch_buffer, (int)lexer->line);
         printf("Msg: %s\n", msg);
-        cj_assert(FALSE);
+        exit(-1);
     }
 
     internal Boolean tryConsumeWord(CJ_Lexer* lexer) {
@@ -1689,7 +1689,7 @@
     internal void parser_reportError(CJ_Parser* parser, char* msg) {
         printf("CJ_Parser Error: %s | Line: %d\n", parser_peekNthToken(parser, 0).lexeme, (int)parser_peekNthToken(parser, 0).line);
         printf("Msg: %s\n", msg);
-        cj_assert(FALSE);
+        exit(-1);
     }
 
     UNUSED_FUNCTION internal void expect(CJ_Parser* parser, CJ_TokenType expected_type) {

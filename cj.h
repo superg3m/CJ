@@ -227,27 +227,27 @@
     JSON* JSON_NULL(CJ_Arena* arena);
 
     #define cj_push(root, key, value) MACRO_cj_push(root, key, _Generic((value),  \
-        bool: JSON_BOOL,                \
-        char[sizeof(value)]: JSON_STRING,              \
-        const char[sizeof(value)]: JSON_STRING,              \
-        char*: JSON_STRING,                \
-        const char*: JSON_STRING,          \
-        CJ_StringView: JSON_STRING_VIEW,    \
-        double: JSON_FLOAT,                \
-        int: JSON_INT,                     \
-        JSON*: JSON_JSON                   \
+        bool: JSON_BOOL,                        \
+        char[sizeof(value)]: JSON_STRING,       \
+        const char[sizeof(value)]: JSON_STRING, \
+        char*: JSON_STRING,                     \
+        const char*: JSON_STRING,               \
+        CJ_StringView: JSON_STRING_VIEW,        \
+        double: JSON_FLOAT,                     \
+        int: JSON_INT,                          \
+        JSON*: JSON_JSON                        \
     )(root->arena, value))
 
 
     #define cj_array_push(root, value) MACRO_cj_array_push(root, _Generic((value),  \
-        bool: JSON_BOOL,                \
-        char[sizeof(value)]: JSON_STRING,              \
-        const char[sizeof(value)]: JSON_STRING,              \
-        char*: JSON_STRING,               \
-        const char*: JSON_STRING,         \
-        float: JSON_FLOAT,                \
-        int: JSON_INT,                    \
-        JSON*: JSON_JSON                 \
+        bool: JSON_BOOL,                        \
+        char[sizeof(value)]: JSON_STRING,       \
+        const char[sizeof(value)]: JSON_STRING, \
+        char*: JSON_STRING,                     \
+        const char*: JSON_STRING,               \
+        float: JSON_FLOAT,                      \
+        int: JSON_INT,                          \
+        JSON*: JSON_JSON                        \
     )(root->arena, value))
 #endif
 
@@ -265,24 +265,24 @@
 //
 
 #if defined(CJ_IMPL_MEMORY)
-    #define cj_assert(expression)                     \
-    do {                                               \
-        if (!(expression)) {                           \
+    #define cj_assert(expression)                          \
+    do {                                                   \
+        if (!(expression)) {                               \
             char msg_art[] = "Func: %s, File: %s:%d\n";    \
             printf(msg_art, __func__, __FILE__, __LINE__); \
-            CRASH;                                     \
-        }                                              \
-    } while (false)                                    \
+            CRASH;                                         \
+        }                                                  \
+    } while (false)                                        \
 
-    #define cj_assert_msg(expression, message, ...)	          \
-    do {                                                          \
-        if (!(expression)) {                                      \
-            char msg_art[] = "Func: %s, File: %s:%d\n";               \
-            printf(msg_art, __func__, __FILE__, __LINE__);            \
-            printf(message, ##__VA_ARGS__);                       \
-            CRASH;                                                \
-        }                                                         \
-    } while (false)                                               \
+    #define cj_assert_msg(expression, message, ...)	       \
+    do {                                                   \
+        if (!(expression)) {                               \
+            char msg_art[] = "Func: %s, File: %s:%d\n";    \
+            printf(msg_art, __func__, __FILE__, __LINE__); \
+            printf(message, ##__VA_ARGS__);                \
+            CRASH;                                         \
+        }                                                  \
+    } while (false)                                        \
 
     CJ_API void* cj_alloc(u64 allocation_size);
     CJ_API void* MACRO_cj_free(void* data);

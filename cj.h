@@ -45,13 +45,11 @@
     #undef CLAMP
     #undef local_persist
     #undef internal
-    #undef OFFSET_OF
     #undef FIRST_DIGIT
     #undef GET_BIT
     #undef SET_BIT
     #undef UNSET_BIT
     #undef ArrayCount
-    #undef PLATFORM_MAX_PATH
     #undef PLATFORM_WINDOWS
     #undef PLATFORM_APPLE
     #undef PLATFORM_LINUX
@@ -59,20 +57,19 @@
     #undef CRASH
     #undef UNUSED_FUNCTION
 
-    #include <stdint.h>
     #include <stdio.h>
+    #include <stdbool.h>
+    #include <stdint.h>
     #include <stdarg.h>
     #include <stdlib.h>
-    #include <stdbool.h>
+    #include <stddef.h>
 
     typedef int8_t  s8;
     typedef int16_t s16;
-    typedef int32_t s32;
     typedef int64_t s64;
 
     typedef uint8_t  u8;
     typedef uint16_t u16;
-    typedef uint32_t u32;
     typedef uint64_t u64;
 
     #define NULLPTR 0
@@ -94,19 +91,12 @@
     #define local_persist static
     #define internal static
 
-    #if defined _MSC_VER && !defined _CRT_USE_BUILTIN_OFFSETOF
-        #define OFFSET_OF(type, member) (size_t)(&(((type*)0)->member))
-    #else
-        #define OFFSET_OF(type, member) __builtin_offsetof(type, member)
-    #endif
     #define FIRST_DIGIT(number) ((int)number % 10);
     #define GET_BIT(number, bit_to_check) ((number & (1 << bit_to_check)) >> bit_to_check)
     #define SET_BIT(number, bit_to_set) number |= (1 << bit_to_set);
     #define UNSET_BIT(number, bit_to_unset) number &= (~(1 << bit_to_unset));
 
-    #define ArrayCount(array) (sizeof(array) / sizeof(array[0]))
-
-    #define PLATFORM_MAX_PATH 256
+    #define ArrayCount(array) (int)(sizeof(array) / sizeof(array[0]))
 
     #if defined(_WIN32)
         #define NOMINMAX
@@ -401,8 +391,8 @@
     //
 
     typedef struct CJ_VectorHeader {
-        u32 count;
-        u32 capacity;
+        int count;
+        int capacity;
     } CJ_VectorHeader;
 
     typedef struct CJ_Arena CJ_Arena;
@@ -436,12 +426,12 @@
         }
 
         
-        u32 count = cj_vector_count(vector);
-        u32 capactiy = cj_vector_capacity(vector);
+        int count = cj_vector_count(vector);
+        int capactiy = cj_vector_capacity(vector);
 
         if (capactiy < count + 1) {
             size_t old_allocation_size = sizeof(CJ_VectorHeader) + (capactiy * element_size);
-            u32 new_capactiy = capactiy * 2;
+            int new_capactiy = capactiy * 2;
             size_t new_allocation_size = sizeof(CJ_VectorHeader) + (new_capactiy * element_size);
 
             vector = cj_realloc(cj_vector_header_base(vector), old_allocation_size, new_allocation_size);
@@ -463,12 +453,12 @@
         }
 
         
-        u32 count = cj_vector_count(vector);
-        u32 capactiy = cj_vector_capacity(vector);
+        int count = cj_vector_count(vector);
+        int capactiy = cj_vector_capacity(vector);
 
         if (capactiy < count + 1) {
             size_t old_allocation_size = sizeof(CJ_VectorHeader) + (capactiy * element_size);
-            u32 new_capactiy = capactiy * 2;
+            int new_capactiy = capactiy * 2;
             size_t new_allocation_size = sizeof(CJ_VectorHeader) + (new_capactiy * element_size);
 
             void* new_vector = MACRO_cj_arena_push(arena, new_allocation_size);
@@ -501,7 +491,7 @@
         CJ_Node* head;
         CJ_Node* tail;
         size_t element_size_in_bytes;
-        u32 count;
+        int count;
         bool is_pointer_type;
     } CJ_LinkedList;
 
@@ -580,12 +570,12 @@
     }
     #define cj_node_data_free(linked_list, node) node = MACRO_cj_node_data_free(linked_list, node)
 
-    CJ_Node* cj_linked_list_insert(CJ_LinkedList* linked_list, u32 index, void* data) {
+    CJ_Node* cj_linked_list_insert(CJ_LinkedList* linked_list, int index, void* data) {
         cj_assert(linked_list);
         cj_assert(data);
         cj_assert(index >= 0);
 
-        u32 old_count = linked_list->count++;
+        int old_count = linked_list->count++;
         if (linked_list->head == NULLPTR) { // there is not head and by definition no tail
             CJ_Node* new_node_to_insert = cj_node_create(linked_list, data);
             linked_list->head = new_node_to_insert;
@@ -617,7 +607,7 @@
         // TODO(Jovanni): check if index is closer to count or not then reverse the loop if approaching from the tail end.
         // as opposed to the head end.
         CJ_Node* current_node = linked_list->head; 
-        for (u32 i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             current_node = current_node->next;
         }
 
@@ -630,17 +620,17 @@
         return new_node_to_insert;
     }
 
-    CJ_Node* cj_linked_list_get_node(CJ_LinkedList* linked_list, u32 index) {
+    CJ_Node* cj_linked_list_get_node(CJ_LinkedList* linked_list, int index) {
         cj_assert(linked_list);
         CJ_Node* current_node = linked_list->head; 
-        for (u32 i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             current_node = current_node->next;
         }
 
         return current_node;
     }
 
-    void* cj_linked_list_get(CJ_LinkedList* linked_list, u32 index) {
+    void* cj_linked_list_get(CJ_LinkedList* linked_list, int index) {
         return cj_linked_list_get_node(linked_list, index)->data;
     }
 
@@ -656,9 +646,9 @@
         return cj_linked_list_insert(linked_list, linked_list->count, data);
     }
 
-    u32 cj_linked_list_node_to_index(CJ_LinkedList* linked_list, CJ_Node* address) {
+    int cj_linked_list_node_to_index(CJ_LinkedList* linked_list, CJ_Node* address) {
         CJ_Node* current_node = linked_list->head; 
-        for (u32 i = 0; i < linked_list->count + 1; i++) {
+        for (int i = 0; i < linked_list->count + 1; i++) {
             if (current_node == address) {
                 return i;
             }
@@ -669,12 +659,12 @@
         return 0; // should never get here
     }
 
-    CJ_Node cj_linked_list_remove(CJ_LinkedList* linked_list, u32 index) {
+    CJ_Node cj_linked_list_remove(CJ_LinkedList* linked_list, int index) {
         cj_assert(linked_list); 
         cj_assert(linked_list->count > 0); 
         cj_assert(index >= 0);
 
-        u32 old_count = linked_list->count--;
+        int old_count = linked_list->count--;
         if (index == 0 && old_count == 1) { // removing the head fully
             CJ_Node ret = *linked_list->head;
             cj_node_free(linked_list, linked_list->head);
@@ -703,7 +693,7 @@
         }
 
         CJ_Node* current_node = linked_list->head; 
-        for (u32 i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             current_node = current_node->next;
         }
 
@@ -724,7 +714,7 @@
         cj_assert(linked_list); 
         CJ_Node* current_node = linked_list->head; 
         CJ_Node* next_node = NULLPTR; 
-        for (u32 i = 0; i < linked_list->count; i++) {
+        for (int i = 0; i < linked_list->count; i++) {
             next_node = current_node->next;
             cj_node_data_free(linked_list, current_node);
             current_node = next_node;
@@ -988,8 +978,8 @@
     CJ_Arena* MACRO_cj_arena_free(CJ_Arena* arena) {
         cj_assert(arena);
 
-        u32 page_count = arena->pages->count;
-        for (u32 i = 0; i < page_count; i++) {
+        int page_count = arena->pages->count;
+        for (int i = 0; i < page_count; i++) {
             CJ_ArenaPage* page = (CJ_ArenaPage*)cj_linked_list_remove(arena->pages, 0).data;
             cj_assert(page->base_address);
             cj_free(page->base_address);
@@ -1004,7 +994,7 @@
     void cj_arena_clear(CJ_Arena* arena) {
         cj_assert(arena);
 
-        for (u32 i = 0; i < arena->pages->count; i++) {
+        for (int i = 0; i < arena->pages->count; i++) {
             CJ_ArenaPage* page = (CJ_ArenaPage*)cj_linked_list_get(arena->pages, i);
             cj_assert(page->base_address);
             cj_memory_zero(page->base_address, page->used);

@@ -46,12 +46,16 @@ elif IS_LINUX() and not C_BUILD_IS_DEPENDENCY():
     cc.compiler_name = "gcc"
 
 # Do different things depending on the platform
+compiler_inject = []
 if cc.compiler_name == "cl":
     cc.compiler_warning_level = "4"
     cc.compiler_disable_specific_warnings = ["5105", "4668", "4820", "4996", "4189"]
 else:
+    compiler_inject = ["-Wextra"]
     cc.compiler_warning_level = "all"
-    cc.compiler_disable_specific_warnings = ["deprecated", "parentheses", "switch", "unused-variable"]
+    cc.compiler_disable_specific_warnings = [
+        "switch"
+    ]
     
 libs = []
 if IS_WINDOWS():
@@ -65,6 +69,7 @@ procedures_config = {
         output_name = f"cj_test.exe",
         source_files = ["../../cj.c", "../../Test/cj_test.c"],
         additional_libs = libs,
+        compiler_inject_into_args=compiler_inject,
         include_paths = [
             "../..",
         ],

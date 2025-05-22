@@ -8,7 +8,7 @@
         CJ_Arena* arena = cj_arena_create(0);
         JSON* root = cj_create(arena);
         cj_push(root, "name", "Example");
-        cj_push(root, "age", 25.0123);
+        cj_push(root, "age", 200.000);
 
         JSON* nested = cj_create(arena);
         cj_push(nested, "address1", "San Francisco");

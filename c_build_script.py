@@ -54,7 +54,8 @@ else:
     compiler_inject = ["-Wextra"]
     cc.compiler_warning_level = "all"
     cc.compiler_disable_specific_warnings = [
-        "switch"
+        "switch",
+        "unreachable-code-generic-assoc"
     ]
     
 libs = []

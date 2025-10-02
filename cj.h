@@ -1282,6 +1282,9 @@
                 return cj_format_json_with_indent(total_allocation_size, arena, num_json, '{', '}', buffers, count);
             } break;
 
+            default: {
+                cj_assert(false); // something has gone horribly wrong...
+            } break;
         }
 
         return NULLPTR;
@@ -1320,8 +1323,8 @@
         CJ_TOKEN_STRING_LITERAL,             // "TESTING
         CJ_TOKEN_INTEGER_LITERAL,            // 6
         CJ_TOKEN_FLOAT_LITERAL,              // 2.523
-        CJ_TOKEN_true,                       // true
-        CJ_TOKEN_false,                      // false
+        CJ_TOKEN_TRUE,                       // true
+        CJ_TOKEN_FALSE,                      // false
         CJ_TOKEN_NULL,                       // null
         CJ_TOKEN_COUNT
     } CJ_TokenType;
@@ -1349,8 +1352,8 @@
         stringify(CJ_TOKEN_STRING_LITERAL),
         stringify(CJ_TOKEN_INTEGER_LITERAL),
         stringify(CJ_TOKEN_FLOAT_LITERAL),
-        stringify(CJ_TOKEN_true),
-        stringify(CJ_TOKEN_false),
+        stringify(CJ_TOKEN_TRUE),
+        stringify(CJ_TOKEN_FALSE),
         stringify(CJ_TOKEN_NULL),
     };
 
@@ -1447,7 +1450,7 @@
 
     static CJ_TokenType getAcceptedKeyword(CJ_Lexer* lexer) {
         static CJ_TokenType keywordTokenTable[] = {
-            CJ_TOKEN_true, CJ_TOKEN_false, CJ_TOKEN_NULL,
+            CJ_TOKEN_TRUE, CJ_TOKEN_FALSE, CJ_TOKEN_NULL,
         };
 
         static char* keywords[] = {
@@ -1716,11 +1719,11 @@
         parser_consumeNextToken(parser);
 
         switch (parser->tok.type) {
-            case CJ_TOKEN_true: {
+            case CJ_TOKEN_TRUE: {
                 *ret_state = JSON_BOOL(arena, true);
             } break;
 
-            case CJ_TOKEN_false: {
+            case CJ_TOKEN_FALSE: {
                 *ret_state = JSON_BOOL(arena, false);
             } break;
 
@@ -1758,6 +1761,10 @@
             case CJ_TOKEN_LEFT_CURLY: { // Parse object
                 *ret_state = cj_create(arena);
                 return true;
+            } break;
+
+            default: {
+                cj_assert(false); // something has gone horribly wrong...
             } break;
         }
 

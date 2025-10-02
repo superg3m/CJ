@@ -1213,7 +1213,7 @@
             } break;
 
             case CJ_TYPE_FLOAT: {
-                return cj_sprint(arena, NULLPTR, "%f", root->cj_float);
+                return cj_sprint(arena, NULLPTR, "%.4g", root->cj_float);
             } break;
 
             case CJ_TYPE_STRING: {
